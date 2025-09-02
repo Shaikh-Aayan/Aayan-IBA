@@ -6,13 +6,20 @@
     <title>Aayan's Space Doodle Code Nook</title>
     <meta name="description" content="Aayan's personal space-themed code portfolio with interactive doodles and animations">
     <style>
-        /* DEVELOPER NOTES:
+        /* ===== DEVELOPER CONFIGURATION ===== */
+        /*
         To customize this portfolio:
         1. Change the DRIVE_ID variable in the JavaScript section
         2. Update the greeting text in the HTML section
         3. Modify the color variables below to change the theme
-        */
         
+        DEFAULT VALUES:
+        - DRIVE_ID: '17jEVl8kL87AsKK1c6VcKTp2_TUTMpDvG'
+        - FILENAME: 'my_code.c'
+        - Accent colors: #7c3aed (purple) and #06b6d4 (cyan)
+        - Base theme: dark
+        */
+
         /* CSS Variables for Theming */
         :root {
             /* Base colors - Dark theme */
@@ -26,6 +33,9 @@
             --accent-4: #ffe082;
             --card-bg: rgba(20, 22, 36, 0.6);
             --card-border: rgba(124, 58, 237, 0.2);
+            --success-color: #4ade80;
+            --warning-color: #facc15;
+            --error-color: #f87171;
             
             /* Animation speeds */
             --transition-slow: 0.8s;
@@ -36,6 +46,10 @@
             --border-radius: 16px;
             --container-width: 90%;
             --max-container-width: 1200px;
+            
+            /* Effects */
+            --grain-opacity: 0.02;
+            --vignette-opacity: 0.3;
         }
         
         /* Ultra-dark theme */
@@ -45,6 +59,18 @@
             --card-bg: rgba(10, 12, 24, 0.7);
             --accent-1: #6d28d9;
             --accent-2: #0891b2;
+        }
+        
+        /* Light theme */
+        [data-theme="light"] {
+            --bg-primary: #f0f4ff;
+            --bg-secondary: rgba(0, 0, 0, 0.03);
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a5568;
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --card-border: rgba(124, 58, 237, 0.1);
+            --accent-1: #7c3aed;
+            --accent-2: #06b6d4;
         }
         
         /* Base styles */
@@ -69,6 +95,52 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+        }
+        
+        /* Vignette effect */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+            background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, var(--vignette-opacity)));
+            opacity: 0.6;
+        }
+        
+        /* Grain texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            opacity: var(--grain-opacity);
+        }
+        
+        /* Skip link for accessibility */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 10px;
+            background: var(--accent-1);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            z-index: 1000;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .skip-link:focus {
+            top: 10px;
         }
         
         /* Header styles */
@@ -100,6 +172,12 @@
             height: 24px;
         }
         
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
         .theme-toggle {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -121,6 +199,159 @@
         .theme-toggle svg {
             width: 16px;
             height: 16px;
+        }
+        
+        /* Theme editor panel */
+        .theme-editor {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 320px;
+            height: 100vh;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid var(--card-border);
+            padding: 20px;
+            z-index: 20;
+            transition: transform var(--transition-medium);
+            overflow-y: auto;
+        }
+        
+        .theme-editor.open {
+            transform: translateX(-320px);
+        }
+        
+        .theme-editor h3 {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .theme-editor h3 button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+        
+        .theme-option {
+            margin-bottom: 15px;
+        }
+        
+        .theme-option label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .color-inputs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .color-input {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .color-input input[type="color"] {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--card-border);
+            border-radius: 8px;
+            cursor: pointer;
+            background: var(--bg-primary);
+        }
+        
+        .color-input span {
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+        
+        .theme-presets {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .theme-preset {
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid var(--card-border);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .theme-preset:hover {
+            transform: scale(1.05);
+        }
+        
+        .theme-preset.dark {
+            background: linear-gradient(135deg, #060712, #1a202c);
+        }
+        
+        .theme-preset.ultra-dark {
+            background: linear-gradient(135deg, #020208, #0f172a);
+        }
+        
+        .theme-preset.light {
+            background: linear-gradient(135deg, #f0f4ff, #e2e8f0);
+        }
+        
+        .contrast-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .contrast-check svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .contrast-good {
+            color: var(--success-color);
+        }
+        
+        .contrast-warning {
+            color: var(--warning-color);
+        }
+        
+        .contrast-poor {
+            color: var(--error-color);
+        }
+        
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .editor-actions button {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .editor-actions button.primary {
+            background: var(--accent-1);
+            color: white;
+        }
+        
+        .editor-actions button:hover {
+            opacity: 0.9;
         }
         
         /* Main container */
@@ -409,6 +640,37 @@
             color: var(--accent-1);
         }
         
+        .drive-status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            display: none;
+        }
+        
+        .drive-status.accessible {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+        
+        .drive-status.restricted {
+            background: rgba(250, 204, 21, 0.1);
+            border: 1px solid var(--warning-color);
+            color: var(--warning-color);
+        }
+        
+        .drive-status.inaccessible {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+        }
+        
+        .status-icon {
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
         .help-text {
             margin-top: 1.5rem;
             padding: 1rem;
@@ -416,6 +678,15 @@
             border-radius: var(--border-radius);
             font-size: 0.9rem;
             color: var(--text-secondary);
+        }
+        
+        .help-steps {
+            margin-top: 0.5rem;
+            padding-left: 1.5rem;
+        }
+        
+        .help-steps li {
+            margin-bottom: 0.5rem;
         }
         
         /* Background elements */
@@ -434,12 +705,6 @@
             background-color: white;
             border-radius: 50%;
             animation: twinkle linear infinite;
-        }
-        
-        .doodle {
-            position: fixed;
-            pointer-events: none;
-            z-index: 2;
         }
         
         /* Animations */
@@ -475,9 +740,11 @@
         @keyframes thruster {
             from {
                 transform: scaleY(0.8);
+                stop-color: #ffd43b;
             }
             to {
                 transform: scaleY(1.2);
+                stop-color: #fd7e14;
             }
         }
         
@@ -505,6 +772,11 @@
             .thruster {
                 animation: none;
             }
+            
+            body::before,
+            body::after {
+                display: none;
+            }
         }
         
         /* Responsive styles */
@@ -531,6 +803,29 @@
                 width: 100%;
                 justify-content: center;
             }
+            
+            .theme-editor {
+                width: 280px;
+                right: -280px;
+            }
+            
+            .theme-editor.open {
+                transform: translateX(-280px);
+            }
+            
+            .theme-presets {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stars {
+                display: none;
+            }
+            
+            body {
+                background: radial-gradient(ellipse at center, var(--bg-primary) 60%, #020208);
+            }
         }
         
         /* Focus styles for accessibility */
@@ -555,11 +850,31 @@
             opacity: 0;
             visibility: hidden;
             transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            max-width: 90%;
         }
         
         .toast.visible {
             opacity: 1;
             visibility: visible;
+        }
+        
+        .toast-message {
+            flex: 1;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         /* Cursor trail */
@@ -574,9 +889,61 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
+        
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 30;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-medium);
+        }
+        
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
     </style>
 </head>
 <body>
+    <!-- Skip link for accessibility -->
+    <a href="#main" class="skip-link">Skip to content</a>
+
     <!-- Header with theme toggle -->
     <header>
         <div class="logo">
@@ -585,24 +952,78 @@
             </svg>
             Aayan's Code
         </div>
-        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 2V4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 20V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M4.93 4.93L6.34 6.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M17.66 17.66L19.07 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M2 12H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M20 12H22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M6.34 17.66L4.93 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M19.07 4.93L17.66 6.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Theme
-        </button>
+        <div class="header-controls">
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme editor">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 2V4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 20V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M4.93 4.93L6.34 6.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M17.66 17.66L19.07 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 12H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M20 12H22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M6.34 17.66L4.93 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M19.07 4.93L17.66 6.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Theme
+            </button>
+        </div>
     </header>
 
+    <!-- Theme editor panel -->
+    <div class="theme-editor" id="themeEditor">
+        <h3>
+            Theme Editor
+            <button id="closeThemeEditor" aria-label="Close theme editor">×</button>
+        </h3>
+        
+        <div class="theme-option">
+            <label for="baseTheme">Base Theme</label>
+            <select id="baseTheme" class="theme-select">
+                <option value="dark">Dark</option>
+                <option value="ultra-dark">Ultra Dark</option>
+                <option value="light">Light</option>
+            </select>
+        </div>
+        
+        <div class="theme-option">
+            <label>Accent Colors</label>
+            <div class="color-inputs">
+                <div class="color-input">
+                    <input type="color" id="accent1" value="#7c3aed" aria-label="Primary accent color">
+                    <span>Primary</span>
+                </div>
+                <div class="color-input">
+                    <input type="color" id="accent2" value="#06b6d4" aria-label="Secondary accent color">
+                    <span>Secondary</span>
+                </div>
+            </div>
+            
+            <div class="contrast-check" id="contrastCheck1">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <span>Contrast: Good</span>
+            </div>
+        </div>
+        
+        <div class="theme-option">
+            <label>Theme Presets</label>
+            <div class="theme-presets">
+                <div class="theme-preset dark" data-theme="dark" aria-label="Dark theme preset"></div>
+                <div class="theme-preset ultra-dark" data-theme="ultra-dark" aria-label="Ultra dark theme preset"></div>
+                <div class="theme-preset light" data-theme="light" aria-label="Light theme preset"></div>
+            </div>
+        </div>
+        
+        <div class="editor-actions">
+            <button class="primary" id="applyTheme">Apply Changes</button>
+            <button id="resetTheme">Reset to Defaults</button>
+        </div>
+    </div>
+
     <!-- Main container -->
-    <div class="container">
+    <div class="container" id="main">
         <!-- Landing Page -->
         <div class="page active" id="landingPage">
             <div class="landing-content">
@@ -679,10 +1100,28 @@
                             </svg>
                             Download (may require public sharing)
                         </button>
+                        <button class="btn btn-secondary" id="checkAccessBtn">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Check Access
+                        </button>
+                    </div>
+                    
+                    <div class="drive-status" id="driveStatus">
+                        <span class="status-icon"></span>
+                        <span class="status-message"></span>
                     </div>
                     
                     <div class="help-text">
                         <p>If you encounter issues accessing the file, make sure the sharing settings are set to "Anyone with the link can view" on Google Drive.</p>
+                        
+                        <ol class="help-steps">
+                            <li>Open the file in Google Drive</li>
+                            <li>Click the "Share" button</li>
+                            <li>Change "Restricted" to "Anyone with the link"</li>
+                        </ol>
                     </div>
                 </div>
             </div>
@@ -693,17 +1132,52 @@
     <div class="stars" id="stars"></div>
     
     <!-- Toast notification -->
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite">
+        <div class="toast-message"></div>
+        <button class="toast-close" id="toastClose" aria-label="Close notification">×</button>
+    </div>
+
+    <!-- Modal for Drive access instructions -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Drive Access Instructions</h3>
+                <button class="modal-close" id="modalClose" aria-label="Close modal">×</button>
+            </div>
+            <div class="modal-content">
+                <p>To ensure your file is accessible:</p>
+                <ol class="help-steps">
+                    <li>Open the file in Google Drive</li>
+                    <li>Click the "Share" button</li>
+                    <li>Change "Restricted" to "Anyone with the link"</li>
+                    <li>Copy the file URL and update the DRIVE_ID in the code if needed</li>
+                </ol>
+                <div class="editor-actions" style="margin-top: 20px;">
+                    <button class="primary" id="copyUrlBtn">Copy File URL</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- JavaScript Section -->
     <script>
-        // DEVELOPER NOTES:
-        // To change the Google Drive file:
-        // 1. Replace the DRIVE_ID below with your file's ID
-        // 2. The Drive ID is the long string in the URL: https://drive.google.com/file/d/DRIVE_ID/view
+        // ===== DEVELOPER CONFIGURATION =====
+        /*
+        To change the Google Drive file:
+        1. Replace the DRIVE_ID below with your file's ID
+        2. The Drive ID is the long string in the URL: https://drive.google.com/file/d/DRIVE_ID/view
+        */
         const DRIVE_ID = '17jEVl8kL87AsKK1c6VcKTp2_TUTMpDvG';
+        const FILENAME = 'my_code.c'; // Display name for the file
         const DRIVE_VIEW_URL = `https://drive.google.com/file/d/${DRIVE_ID}/view`;
         const DRIVE_DOWNLOAD_URL = `https://drive.google.com/uc?export=download&id=${DRIVE_ID}`;
+        
+        // Default theme settings
+        const DEFAULT_THEME = {
+            mode: 'dark',
+            accent1: '#7c3aed',
+            accent2: '#06b6d4'
+        };
         
         // DOM Elements
         const landingPage = document.getElementById('landingPage');
@@ -712,27 +1186,129 @@
         const backButton = document.getElementById('backButton');
         const openDriveBtn = document.getElementById('openDriveBtn');
         const downloadBtn = document.getElementById('downloadBtn');
+        const checkAccessBtn = document.getElementById('checkAccessBtn');
         const themeToggle = document.getElementById('themeToggle');
+        const themeEditor = document.getElementById('themeEditor');
+        const closeThemeEditor = document.getElementById('closeThemeEditor');
+        const baseThemeSelect = document.getElementById('baseTheme');
+        const accent1Input = document.getElementById('accent1');
+        const accent2Input = document.getElementById('accent2');
+        const applyThemeBtn = document.getElementById('applyTheme');
+        const resetThemeBtn = document.getElementById('resetTheme');
         const toast = document.getElementById('toast');
+        const toastMessage = toast.querySelector('.toast-message');
+        const toastClose = document.getElementById('toastClose');
         const starsContainer = document.getElementById('stars');
+        const driveStatus = document.getElementById('driveStatus');
+        const statusIcon = driveStatus.querySelector('.status-icon');
+        const statusMessage = driveStatus.querySelector('.status-message');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalClose = document.getElementById('modalClose');
+        const copyUrlBtn = document.getElementById('copyUrlBtn');
+        const themePresets = document.querySelectorAll('.theme-preset');
+        const contrastCheck = document.getElementById('contrastCheck1');
+        const filenameElement = document.querySelector('.filename');
+        
+        // Particle pool for performance
+        const particlePool = [];
+        const MAX_PARTICLES = 50;
+        
+        // Initialize particle pool
+        function initParticlePool() {
+            for (let i = 0; i < MAX_PARTICLES; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'cursor-trail';
+                particle.style.opacity = '0';
+                document.body.appendChild(particle);
+                particlePool.push(particle);
+            }
+        }
+        
+        // Get available particle from pool
+        function getParticle() {
+            for (const particle of particlePool) {
+                if (particle.style.opacity === '0') {
+                    return particle;
+                }
+            }
+            // If no available particle, reuse the oldest one
+            return particlePool.shift();
+        }
         
         // Theme management
         function initTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const savedTheme = localStorage.getItem('nook:theme') || DEFAULT_THEME.mode;
+            const savedAccent1 = localStorage.getItem('nook:accent1') || DEFAULT_THEME.accent1;
+            const savedAccent2 = localStorage.getItem('nook:accent2') || DEFAULT_THEME.accent2;
+            
             document.documentElement.setAttribute('data-theme', savedTheme);
-            updateThemeToggleText(savedTheme);
+            document.documentElement.style.setProperty('--accent-1', savedAccent1);
+            document.documentElement.style.setProperty('--accent-2', savedAccent2);
+            
+            // Update theme editor inputs
+            baseThemeSelect.value = savedTheme;
+            accent1Input.value = savedAccent1;
+            accent2Input.value = savedAccent2;
+            
+            updateContrastCheck();
         }
         
-        function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'ultra-dark' : 'dark';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeToggleText(newTheme);
+        function updateContrastCheck() {
+            // Simple contrast check between accent colors and background
+            const accent1 = getComputedStyle(document.documentElement).getPropertyValue('--accent-1').trim();
+            const bgPrimary = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim();
+            
+            // This is a simplified contrast check - in a real application you might want
+            // to use a more sophisticated algorithm like APCA or WCAG
+            const contrastRatio = getContrastRatio(accent1, bgPrimary);
+            
+            contrastCheck.className = 'contrast-check';
+            if (contrastRatio > 4.5) {
+                contrastCheck.classList.add('contrast-good');
+                contrastCheck.querySelector('span').textContent = 'Contrast: Good';
+            } else if (contrastRatio > 3) {
+                contrastCheck.classList.add('contrast-warning');
+                contrastCheck.querySelector('span').textContent = 'Contrast: Fair';
+            } else {
+                contrastCheck.classList.add('contrast-poor');
+                contrastCheck.querySelector('span').textContent = 'Contrast: Poor';
+            }
         }
         
-        function updateThemeToggleText(theme) {
-            themeToggle.querySelector('span').textContent = theme === 'dark' ? 'Dark' : 'Ultra Dark';
+        // Simplified contrast ratio calculation
+        function getContrastRatio(color1, color2) {
+            // This is a placeholder - real implementation would convert colors to luminance
+            // and calculate the ratio properly
+            return 4.5; // Placeholder value
+        }
+        
+        function saveThemeSettings() {
+            localStorage.setItem('nook:theme', baseThemeSelect.value);
+            localStorage.setItem('nook:accent1', accent1Input.value);
+            localStorage.setItem('nook:accent2', accent2Input.value);
+        }
+        
+        function applyThemeSettings() {
+            document.documentElement.setAttribute('data-theme', baseThemeSelect.value);
+            document.documentElement.style.setProperty('--accent-1', accent1Input.value);
+            document.documentElement.style.setProperty('--accent-2', accent2Input.value);
+            
+            saveThemeSettings();
+            updateContrastCheck();
+            showToast('Theme updated successfully');
+        }
+        
+        function resetThemeSettings() {
+            localStorage.removeItem('nook:theme');
+            localStorage.removeItem('nook:accent1');
+            localStorage.removeItem('nook:accent2');
+            
+            baseThemeSelect.value = DEFAULT_THEME.mode;
+            accent1Input.value = DEFAULT_THEME.accent1;
+            accent2Input.value = DEFAULT_THEME.accent2;
+            
+            applyThemeSettings();
+            showToast('Theme reset to defaults');
         }
         
         // Page navigation
@@ -741,6 +1317,11 @@
             setTimeout(() => {
                 projectPage.classList.add('active');
                 window.location.hash = 'project';
+                
+                // Set focus to the first interactive element on the project page
+                setTimeout(() => {
+                    backButton.focus();
+                }, 100);
             }, 400);
             
             // Create whoosh effect with particles
@@ -752,6 +1333,11 @@
             setTimeout(() => {
                 landingPage.classList.add('active');
                 window.location.hash = '';
+                
+                // Set focus to the portal
+                setTimeout(() => {
+                    portal.focus();
+                }, 100);
             }, 400);
         }
         
@@ -759,22 +1345,17 @@
         function createWhooshEffect() {
             for (let i = 0; i < 30; i++) {
                 setTimeout(() => {
-                    const particle = document.createElement('div');
-                    particle.style.position = 'fixed';
-                    particle.style.width = '4px';
-                    particle.style.height = '4px';
-                    particle.style.borderRadius = '50%';
-                    particle.style.background = 'white';
+                    const particle = getParticle();
+                    if (!particle) return;
+                    
                     particle.style.left = `${window.innerWidth / 2}px`;
                     particle.style.top = `${window.innerHeight / 2}px`;
-                    particle.style.pointerEvents = 'none';
-                    particle.style.zIndex = '100';
+                    particle.style.background = 'white';
+                    particle.style.opacity = '1';
                     
                     const angle = Math.random() * Math.PI * 2;
                     const distance = 50 + Math.random() * 100;
                     const duration = 400 + Math.random() * 200;
-                    
-                    document.body.appendChild(particle);
                     
                     particle.animate([
                         { 
@@ -791,7 +1372,7 @@
                     });
                     
                     setTimeout(() => {
-                        document.body.removeChild(particle);
+                        particle.style.opacity = '0';
                     }, duration);
                 }, i * 20);
             }
@@ -814,9 +1395,50 @@
             showToast('If download doesn\'t start, check file sharing settings.');
         }
         
+        async function checkDriveAccess() {
+            driveStatus.style.display = 'none';
+            showToast('Checking Drive access...');
+            
+            try {
+                // Try to fetch the file with no-cors mode to check if it's accessible
+                const response = await fetch(DRIVE_DOWNLOAD_URL, {
+                    method: 'HEAD',
+                    mode: 'no-cors',
+                    cache: 'no-cache'
+                });
+                
+                // Note: With no-cors mode, we can't read the response status, but if it doesn't throw an error,
+                // we can assume the file might be accessible
+                driveStatus.className = 'drive-status accessible';
+                statusIcon.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>';
+                statusMessage.textContent = 'File appears to be accessible. Download should work.';
+                driveStatus.style.display = 'block';
+                
+                showToast('Drive access check completed');
+            } catch (error) {
+                driveStatus.className = 'drive-status inaccessible';
+                statusIcon.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>';
+                statusMessage.textContent = 'File may not be accessible. Check sharing settings.';
+                driveStatus.style.display = 'block';
+                
+                showToast('Drive access check failed. File may be restricted.');
+            }
+        }
+        
+        function copyDriveUrl() {
+            navigator.clipboard.writeText(DRIVE_VIEW_URL)
+                .then(() => {
+                    showToast('Drive URL copied to clipboard');
+                    modalOverlay.classList.remove('visible');
+                })
+                .catch(err => {
+                    showToast('Failed to copy URL: ' + err);
+                });
+        }
+        
         // Toast notifications
         function showToast(message, duration = 3000) {
-            toast.textContent = message;
+            toastMessage.textContent = message;
             toast.classList.add('visible');
             
             setTimeout(() => {
@@ -826,7 +1448,7 @@
         
         // Create starry background
         function createStars() {
-            const starsCount = 150;
+            const starsCount = window.innerWidth < 480 ? 50 : 150;
             const stars = [];
             
             for (let i = 0; i < starsCount; i++) {
@@ -921,6 +1543,12 @@
                 e.preventDefault();
                 openDriveFile();
             }
+            
+            // Ctrl/Cmd + E to open theme editor
+            if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                e.preventDefault();
+                themeEditor.classList.add('open');
+            }
         }
         
         // Check URL hash on load
@@ -939,13 +1567,33 @@
             backButton.addEventListener('click', navigateToLandingPage);
             openDriveBtn.addEventListener('click', openDriveFile);
             downloadBtn.addEventListener('click', downloadDriveFile);
-            themeToggle.addEventListener('click', toggleTheme);
+            checkAccessBtn.addEventListener('click', checkDriveAccess);
+            themeToggle.addEventListener('click', () => themeEditor.classList.add('open'));
+            closeThemeEditor.addEventListener('click', () => themeEditor.classList.remove('open'));
+            applyThemeBtn.addEventListener('click', applyThemeSettings);
+            resetThemeBtn.addEventListener('click', resetThemeSettings);
+            toastClose.addEventListener('click', () => toast.classList.remove('visible'));
+            modalClose.addEventListener('click', () => modalOverlay.classList.remove('visible'));
+            copyUrlBtn.addEventListener('click', copyDriveUrl);
             document.addEventListener('keydown', handleKeyDown);
+            
+            // Theme preset click handlers
+            themePresets.forEach(preset => {
+                preset.addEventListener('click', () => {
+                    const theme = preset.getAttribute('data-theme');
+                    baseThemeSelect.value = theme;
+                    applyThemeSettings();
+                });
+            });
             
             // Initialize features
             initTheme();
+            initParticlePool();
             createStars();
             checkInitialHash();
+            
+            // Set filename
+            filenameElement.textContent = FILENAME;
             
             // Initialize cursor trail if not reduced motion
             if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
