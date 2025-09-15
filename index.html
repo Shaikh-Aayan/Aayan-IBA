@@ -640,7 +640,7 @@
             color: var(--accent-1);
         }
         
-        .drive-status {
+        .-status {
             margin-top: 1.5rem;
             padding: 1rem;
             border-radius: var(--border-radius);
@@ -648,19 +648,19 @@
             display: none;
         }
         
-        .drive-status.accessible {
+        .-status.accessible {
             background: rgba(74, 222, 128, 0.1);
             border: 1px solid var(--success-color);
             color: var(--success-color);
         }
         
-        .drive-status.restricted {
+        .-status.restricted {
             background: rgba(250, 204, 21, 0.1);
             border: 1px solid var(--warning-color);
             color: var(--warning-color);
         }
         
-        .drive-status.inaccessible {
+        .-status.inaccessible {
             background: rgba(248, 113, 113, 0.1);
             border: 1px solid var(--error-color);
             color: var(--error-color);
@@ -1081,7 +1081,7 @@
                         </div>
                     </div>
                     
-                    <p>This is your C code file stored on Google Drive. You can open it directly in Drive or download it to your computer.</p>
+                    <p>This is your C code file stored on Google . You can open it directly in  or download it to your computer.</p>
                     
                     <div class="file-actions">
                         <button class="btn btn-primary" id="openDriveBtn">
@@ -1167,7 +1167,7 @@
         1. Replace the DRIVE_ID below with your file's ID
         2. The Drive ID is the long string in the URL: https://drive.google.com/file/d/DRIVE_ID/view
         */
-        const DRIVE_ID = '17jEVl8kL87AsKK1c6VcKTp2_TUTMpDvG';
+        const DRIVE_ID = '1zbbsJdCQEkfBNT6bENdQLAVeurpKFscs';
         const FILENAME = 'my_code.c'; // Display name for the file
         const DRIVE_VIEW_URL = `https://drive.google.com/file/d/${DRIVE_ID}/view`;
         const DRIVE_DOWNLOAD_URL = `https://drive.google.com/uc?export=download&id=${DRIVE_ID}`;
