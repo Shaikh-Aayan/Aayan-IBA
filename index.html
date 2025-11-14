@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aayan's Space Drive</title>
-    <meta name="description" content="Aayan's encrypted space-themed cloud drive">
+    <title>Aayan's Universal Drive</title>
+    <meta name="description" content="Aayan's multi-theme secure cloud drive">
     <style>
-        /* ===== ORIGINAL SPACE THEME CSS ===== */
-        :root {
+        /* ===== SPACE THEME (DEFAULT) ===== */
+        [data-theme="space"] {
             --bg-primary: #060712;
             --bg-secondary: rgba(255, 255, 255, 0.03);
             --text-primary: #ffffff;
@@ -21,6 +21,27 @@
             --success-color: #4ade80;
             --warning-color: #facc15;
             --error-color: #f87171;
+        }
+
+        /* ===== COZY THEME ===== */
+        [data-theme="cozy"] {
+            --bg-primary: #FAECBB;
+            --bg-secondary: #F7FBC4;
+            --text-primary: #2A2A2A;
+            --text-secondary: #5A5A5A;
+            --accent-1: #57BED6;
+            --accent-2: #CA866E;
+            --accent-3: #A3BB9A;
+            --accent-4: #D58E3C;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-border: rgba(42, 42, 42, 0.1);
+            --success-color: #5C8A76;
+            --warning-color: #D58E3C;
+            --error-color: #CA866E;
+        }
+
+        /* ===== COMMON STYLES ===== */
+        :root {
             --transition-slow: 0.8s;
             --transition-medium: 0.4s;
             --transition-fast: 0.2s;
@@ -43,7 +64,7 @@
             background-color: var(--bg-primary);
             color: var(--text-primary);
             overflow-x: hidden;
-            transition: background-color var(--transition-medium);
+            transition: all var(--transition-medium);
         }
 
         body {
@@ -54,8 +75,21 @@
             min-height: 100vh;
         }
 
-        /* Vignette effect */
-        body::after {
+        /* Theme-specific background effects */
+        [data-theme="space"] body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            opacity: var(--grain-opacity);
+        }
+
+        [data-theme="space"] body::after {
             content: '';
             position: fixed;
             top: 0;
@@ -68,8 +102,7 @@
             opacity: 0.6;
         }
 
-        /* Grain texture */
-        body::before {
+        [data-theme="cozy"] body::before {
             content: '';
             position: fixed;
             top: 0;
@@ -77,9 +110,11 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 4;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-            opacity: var(--grain-opacity);
+            z-index: 1;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(250, 236, 187, 0.3) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(163, 187, 154, 0.2) 0%, transparent 20%),
+                radial-gradient(circle at 50% 50%, rgba(247, 251, 196, 0.4) 0%, transparent 50%);
         }
 
         .skip-link {
@@ -138,23 +173,84 @@
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 20px;
-            padding: 6px 12px;
+            padding: 8px 16px;
             color: var(--text-secondary);
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             transition: all var(--transition-fast);
+            font-weight: 500;
         }
 
         .theme-toggle:hover {
             color: var(--text-primary);
             border-color: var(--accent-1);
+            transform: translateY(-1px);
         }
 
         .theme-toggle svg {
             width: 16px;
             height: 16px;
+        }
+
+        /* Theme selector dropdown */
+        .theme-selector {
+            position: relative;
+            display: inline-block;
+        }
+
+        .theme-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--border-radius);
+            padding: 8px;
+            min-width: 140px;
+            z-index: 1000;
+            margin-top: 5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme-selector:hover .theme-dropdown {
+            display: block;
+        }
+
+        .theme-option {
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-option:hover {
+            background: var(--bg-secondary);
+        }
+
+        .theme-option.active {
+            background: var(--accent-1);
+            color: white;
+        }
+
+        .theme-preview {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 1px solid var(--card-border);
+        }
+
+        .theme-preview.space {
+            background: linear-gradient(135deg, #7c3aed, #06b6d4);
+        }
+
+        .theme-preview.cozy {
+            background: linear-gradient(135deg, #57BED6, #CA866E);
         }
 
         /* Main container */
@@ -210,6 +306,11 @@
             animation: fadeInUp 0.8s ease-out;
         }
 
+        [data-theme="cozy"] .greeting {
+            font-family: 'Georgia', serif;
+            font-weight: normal;
+        }
+
         .subheading {
             font-size: 1.2rem;
             color: var(--text-secondary);
@@ -238,10 +339,19 @@
             transition: all var(--transition-medium);
         }
 
+        [data-theme="cozy"] .portal {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--accent-1);
+        }
+
         .portal:hover {
             transform: scale(1.04);
             box-shadow: 0 0 50px rgba(124, 58, 237, 0.4),
                         inset 0 0 50px rgba(6, 182, 212, 0.3);
+        }
+
+        [data-theme="cozy"] .portal:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
         }
 
         .portal:before {
@@ -348,23 +458,34 @@
             position: relative;
             overflow: hidden;
             transition: all var(--transition-medium);
+            backdrop-filter: blur(10px);
         }
 
         .file-card:hover {
             border-color: var(--accent-1);
             box-shadow: 0 0 30px rgba(124, 58, 237, 0.2);
+            transform: translateY(-2px);
+        }
+
+        [data-theme="cozy"] .file-card {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="cozy"] .file-card:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: var(--border-radius);
             border: none;
             font-weight: 600;
             cursor: pointer;
             transition: all var(--transition-fast);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
+            font-size: 0.95rem;
         }
 
         .btn-primary {
@@ -403,6 +524,7 @@
             padding: 1.5rem;
             text-align: center;
             transition: all var(--transition-medium);
+            backdrop-filter: blur(10px);
         }
 
         .stat-card:hover {
@@ -428,6 +550,7 @@
             margin: 2rem 0;
             transition: all var(--transition-medium);
             cursor: pointer;
+            background: var(--bg-secondary);
         }
 
         .upload-area:hover {
@@ -456,12 +579,17 @@
             transition: all var(--transition-medium);
             position: relative;
             overflow: hidden;
+            backdrop-filter: blur(10px);
         }
 
         .file-item:hover {
             border-color: var(--accent-1);
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(124, 58, 237, 0.2);
+        }
+
+        [data-theme="cozy"] .file-item:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
         .file-item::before {
@@ -522,19 +650,21 @@
         }
 
         .file-action-btn {
-            padding: 6px 12px;
+            padding: 8px 16px;
             border: 1px solid var(--card-border);
             background: transparent;
             color: var(--text-primary);
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             transition: all var(--transition-fast);
+            font-weight: 500;
         }
 
         .file-action-btn:hover {
             border-color: var(--accent-1);
             color: var(--accent-1);
+            transform: translateY(-1px);
         }
 
         .storage-bar {
@@ -544,6 +674,7 @@
             border-radius: 4px;
             margin: 1rem 0;
             overflow: hidden;
+            border: 1px solid var(--card-border);
         }
 
         .storage-progress {
@@ -566,7 +697,7 @@
             animation: shimmer 2s infinite;
         }
 
-        /* Password modal */
+        /* Password modal - FIXED */
         .password-modal {
             position: fixed;
             top: 0;
@@ -593,26 +724,40 @@
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: var(--border-radius);
-            padding: 2rem;
+            padding: 2.5rem;
             width: 90%;
-            max-width: 400px;
+            max-width: 450px;
             text-align: center;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         .password-input {
             width: 100%;
-            padding: 12px 16px;
+            padding: 14px 16px;
             border: 1px solid var(--card-border);
             border-radius: var(--border-radius);
             background: var(--bg-primary);
             color: var(--text-primary);
-            margin: 1rem 0;
+            margin: 1.5rem 0;
             font-size: 1rem;
+            transition: all var(--transition-fast);
         }
 
         .password-input:focus {
             outline: none;
             border-color: var(--accent-1);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
         }
 
         /* Toast notification */
@@ -623,7 +768,7 @@
             transform: translateX(-50%);
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            padding: 12px 20px;
+            padding: 14px 20px;
             border-radius: var(--border-radius);
             z-index: 1001;
             opacity: 0;
@@ -634,6 +779,8 @@
             justify-content: space-between;
             gap: 15px;
             max-width: 90%;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
         .toast.visible {
@@ -643,6 +790,7 @@
 
         .toast-message {
             flex: 1;
+            font-weight: 500;
         }
 
         .toast-close {
@@ -651,6 +799,14 @@
             color: var(--text-secondary);
             cursor: pointer;
             font-size: 1.2rem;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all var(--transition-fast);
+        }
+
+        .toast-close:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
         }
 
         /* Background elements */
@@ -669,6 +825,25 @@
             background-color: white;
             border-radius: 50%;
             animation: twinkle linear infinite;
+        }
+
+        /* Cozy doodle elements */
+        .doodle-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.1;
+        }
+
+        .doodle {
+            position: absolute;
+            stroke: var(--text-primary);
+            fill: none;
+            stroke-width: 1.5;
         }
 
         /* Animations */
@@ -742,12 +917,33 @@
             .file-actions {
                 flex-direction: column;
             }
+            
+            .modal-buttons {
+                flex-direction: column;
+            }
+            
+            .drive-stats {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 480px) {
-            .stars {
+            .stars, .doodle-elements {
                 display: none;
             }
+            
+            .password-content {
+                padding: 2rem 1.5rem;
+            }
+        }
+
+        /* Focus styles for accessibility */
+        button:focus-visible,
+        .portal:focus-visible,
+        .file-action-btn:focus-visible,
+        .password-input:focus-visible {
+            outline: 2px solid var(--accent-1);
+            outline-offset: 2px;
         }
     </style>
 </head>
@@ -761,23 +957,35 @@
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L14 7L19 7L15 10L16 15L12 12L8 15L9 10L5 7L10 7L12 2Z" fill="currentColor"/>
             </svg>
-            Aayan's Space Drive
+            Aayan's Universal Drive
         </div>
         <div class="header-controls">
-            <button class="theme-toggle" id="themeToggle">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M12 2V4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M12 20V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M4.93 4.93L6.34 6.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M17.66 17.66L19.07 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M2 12H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M20 12H22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M6.34 17.66L4.93 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M19.07 4.93L17.66 6.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Theme
-            </button>
+            <div class="theme-selector">
+                <button class="theme-toggle" id="themeToggle">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 2V4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 20V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M4.93 4.93L6.34 6.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M17.66 17.66L19.07 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M20 12H22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M6.34 17.66L4.93 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M19.07 4.93L17.66 6.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Theme
+                </button>
+                <div class="theme-dropdown">
+                    <div class="theme-option active" data-theme="space">
+                        <div class="theme-preview space"></div>
+                        Space Theme
+                    </div>
+                    <div class="theme-option" data-theme="cozy">
+                        <div class="theme-preview cozy"></div>
+                        Cozy Theme
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -786,8 +994,8 @@
         <!-- Landing Page -->
         <div class="page active" id="landingPage">
             <div class="landing-content">
-                <h1 class="greeting">Space Drive</h1>
-                <p class="subheading">Your encrypted cloud storage in the cosmos</p>
+                <h1 class="greeting">Universal Drive</h1>
+                <p class="subheading">Your secure cloud storage across themes</p>
                 
                 <div class="portal-container">
                     <div class="portal" id="portal" tabindex="0" role="button">
@@ -869,18 +1077,21 @@
         </div>
     </div>
 
-    <!-- Password Modal -->
+    <!-- Password Modal - FIXED -->
     <div class="password-modal" id="passwordModal">
         <div class="password-content">
-            <h3 style="margin-bottom: 1rem;">Secure Access</h3>
-            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.5rem;" id="passwordTitle">Secure Access</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;" id="passwordMessage">
                 Enter your master password to unlock the drive
             </p>
-            <input type="password" class="password-input" id="passwordInput" placeholder="Your master password">
-            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                <button class="btn btn-primary" id="unlockBtn" style="flex: 1;">Unlock Drive</button>
-                <button class="btn btn-secondary" id="setupBtn" style="flex: 1;">First Time Setup</button>
+            <input type="password" class="password-input" id="passwordInput" placeholder="Your master password" autocomplete="current-password">
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="unlockBtn">Unlock Drive</button>
+                <button class="btn btn-secondary" id="setupBtn">First Time Setup</button>
             </div>
+            <p style="color: var(--text-secondary); margin-top: 1.5rem; font-size: 0.85rem;">
+                <strong>Note:</strong> This password protects your local data. Use the same password on all devices.
+            </p>
         </div>
     </div>
 
@@ -890,81 +1101,105 @@
         <button class="toast-close" id="toastClose">×</button>
     </div>
 
-    <!-- Background stars -->
+    <!-- Background elements -->
     <div class="stars" id="stars"></div>
+    <div class="doodle-elements" id="doodleElements"></div>
 
     <script>
-        // ===== SECURE CLOUD DRIVE SYSTEM =====
-        class SpaceDrive {
+        // ===== ENHANCED SECURE DRIVE SYSTEM =====
+        class UniversalDrive {
             constructor() {
-                this.CLOUD_STORAGE_KEY = 'aayan_space_drive_cloud';
-                this.LOCAL_CACHE_KEY = 'aayan_space_drive_cache';
-                this.MAX_LOCAL_STORAGE = 50 * 1024 * 1024; // 50MB local cache
+                this.CLOUD_STORAGE_KEY = 'aayan_universal_drive';
+                this.SETTINGS_KEY = 'drive_settings';
+                this.MAX_LOCAL_STORAGE = 100 * 1024 * 1024; // 100MB local cache
                 this.files = new Map();
+                this.settings = this.loadSettings();
                 this.isUnlocked = false;
                 
                 this.init();
             }
 
+            loadSettings() {
+                const saved = localStorage.getItem(this.SETTINGS_KEY);
+                return saved ? JSON.parse(saved) : {
+                    theme: 'space',
+                    password: null,
+                    lastSync: null
+                };
+            }
+
+            saveSettings() {
+                localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(this.settings));
+            }
+
             async init() {
-                // Try to load from cloud storage (simulated)
-                const cloudData = localStorage.getItem(this.CLOUD_STORAGE_KEY);
-                const cacheData = localStorage.getItem(this.LOCAL_CACHE_KEY);
-                
-                if (cloudData) {
+                // Load files data
+                const driveData = localStorage.getItem(this.CLOUD_STORAGE_KEY);
+                if (driveData) {
                     try {
-                        const data = JSON.parse(cloudData);
+                        const data = JSON.parse(driveData);
                         this.files = new Map(data.files || []);
                     } catch (e) {
-                        console.error('Failed to load cloud data');
+                        console.error('Failed to load drive data');
                     }
                 }
 
-                // Load local cache for quick access
-                if (cacheData) {
-                    try {
-                        const cache = JSON.parse(cacheData);
-                        // Merge cache with cloud data
-                        for (const [id, file] of cache.files || []) {
-                            if (!this.files.has(id)) {
-                                this.files.set(id, file);
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Failed to load cache');
-                    }
+                // Apply saved theme
+                this.applyTheme(this.settings.theme);
+            }
+
+            applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                this.settings.theme = theme;
+                this.saveSettings();
+                
+                // Update UI elements based on theme
+                this.updateThemeDependentElements();
+            }
+
+            updateThemeDependentElements() {
+                const theme = this.settings.theme;
+                
+                // Show/hide background elements based on theme
+                const stars = document.getElementById('stars');
+                const doodles = document.getElementById('doodleElements');
+                
+                if (theme === 'space') {
+                    stars.style.display = 'block';
+                    doodles.style.display = 'none';
+                    this.createStars();
+                } else {
+                    stars.style.display = 'none';
+                    doodles.style.display = 'block';
+                    this.createDoodles();
                 }
             }
 
-            // Simulate cloud storage with localStorage
             async saveToCloud() {
                 const data = {
                     files: Array.from(this.files.entries()),
-                    lastSync: new Date().toISOString()
+                    lastSync: new Date().toISOString(),
+                    version: '2.0'
                 };
                 localStorage.setItem(this.CLOUD_STORAGE_KEY, JSON.stringify(data));
-                
-                // Also update local cache for frequently accessed files
-                this.updateLocalCache();
-            }
-
-            updateLocalCache() {
-                // Keep only recent files in local cache for performance
-                const recentFiles = Array.from(this.files.entries())
-                    .sort((a, b) => new Date(b[1].lastAccessed) - new Date(a[1].lastAccessed))
-                    .slice(0, 20); // Keep 20 most recent files
-                
-                const cache = {
-                    files: recentFiles,
-                    cachedAt: new Date().toISOString()
-                };
-                localStorage.setItem(this.LOCAL_CACHE_KEY, JSON.stringify(cache));
             }
 
             async addFile(file) {
                 const fileId = Date.now() + Math.random();
                 
-                return new Promise((resolve) => {
+                return new Promise((resolve, reject) => {
+                    // Check file size
+                    if (file.size > 10 * 1024 * 1024) { // 10MB limit per file
+                        reject(new Error('File size too large (max 10MB)'));
+                        return;
+                    }
+
+                    const totalSize = this.getTotalSize() + file.size;
+                    if (totalSize > this.MAX_LOCAL_STORAGE) {
+                        reject(new Error('Storage limit exceeded'));
+                        return;
+                    }
+
                     const reader = new FileReader();
                     reader.onload = async (e) => {
                         const fileData = {
@@ -981,6 +1216,7 @@
                         await this.saveToCloud();
                         resolve(fileId);
                     };
+                    reader.onerror = () => reject(new Error('Failed to read file'));
                     reader.readAsDataURL(file);
                 });
             }
@@ -1013,30 +1249,110 @@
                 return total;
             }
 
-            // No password protection for now - we can add it if needed
-            async unlockDrive(password) {
-                // Simple password check - can be enhanced with proper encryption
-                const savedPassword = localStorage.getItem('space_drive_password');
-                if (savedPassword && savedPassword !== password) {
-                    throw new Error('Invalid password');
+            // Enhanced password system
+            async setupDrive(password) {
+                if (!password || password.length < 4) {
+                    throw new Error('Password must be at least 4 characters');
                 }
                 
-                if (!savedPassword) {
-                    localStorage.setItem('space_drive_password', password);
+                this.settings.password = btoa(password); // Simple encoding (not secure for production)
+                this.settings.createdAt = new Date().toISOString();
+                this.saveSettings();
+                
+                this.isUnlocked = true;
+                return true;
+            }
+
+            async unlockDrive(password) {
+                if (!this.settings.password) {
+                    throw new Error('Drive not set up. Please use first time setup.');
+                }
+                
+                if (btoa(password) !== this.settings.password) {
+                    throw new Error('Invalid password');
                 }
                 
                 this.isUnlocked = true;
                 return true;
             }
+
+            // Background elements
+            createStars() {
+                const starsContainer = document.getElementById('stars');
+                starsContainer.innerHTML = '';
+                
+                const starsCount = 150;
+                for (let i = 0; i < starsCount; i++) {
+                    const star = document.createElement('div');
+                    star.classList.add('star');
+                    
+                    const size = Math.random() * 3;
+                    star.style.width = `${size}px`;
+                    star.style.height = `${size}px`;
+                    
+                    star.style.left = `${Math.random() * 100}%`;
+                    star.style.top = `${Math.random() * 100}%`;
+                    
+                    const brightness = 0.2 + Math.random() * 0.8;
+                    star.style.backgroundColor = `rgba(255, 255, 255, ${brightness})`;
+                    
+                    const duration = 3000 + Math.random() * 7000;
+                    const delay = Math.random() * 5000;
+                    star.style.animation = `twinkle ${duration}ms ${delay}ms infinite`;
+                    
+                    starsContainer.appendChild(star);
+                }
+            }
+
+            createDoodles() {
+                const doodlesContainer = document.getElementById('doodleElements');
+                doodlesContainer.innerHTML = '';
+                
+                const shapes = ['circle', 'square', 'triangle', 'line'];
+                const colors = ['var(--accent-1)', 'var(--accent-2)', 'var(--accent-3)', 'var(--accent-4)'];
+                
+                for (let i = 0; i < 20; i++) {
+                    const doodle = document.createElement('div');
+                    doodle.className = 'doodle';
+                    
+                    const size = 20 + Math.random() * 60;
+                    const left = Math.random() * 100;
+                    const top = Math.random() * 100;
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    const rotation = Math.random() * 360;
+                    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                    
+                    doodle.style.width = `${size}px`;
+                    doodle.style.height = `${size}px`;
+                    doodle.style.left = `${left}%`;
+                    doodle.style.top = `${top}%`;
+                    doodle.style.border = `1.5px solid ${color}`;
+                    doodle.style.transform = `rotate(${rotation}deg)`;
+                    
+                    if (shape === 'circle') {
+                        doodle.style.borderRadius = '50%';
+                    } else if (shape === 'triangle') {
+                        doodle.style.border = 'none';
+                        doodle.style.borderLeft = `${size/2}px solid transparent`;
+                        doodle.style.borderRight = `${size/2}px solid transparent`;
+                        doodle.style.borderBottom = `${size}px solid ${color}`;
+                        doodle.style.background = 'none';
+                        doodle.style.width = '0';
+                        doodle.style.height = '0';
+                    }
+                    
+                    doodlesContainer.appendChild(doodle);
+                }
+            }
         }
 
-        // ===== UI MANAGEMENT =====
-        class SpaceDriveUI {
+        // ===== ENHANCED UI MANAGEMENT =====
+        class UniversalDriveUI {
             constructor() {
-                this.drive = new SpaceDrive();
+                this.drive = new UniversalDrive();
                 this.initializeElements();
                 this.attachEvents();
-                this.createStars();
+                this.checkFirstTime();
             }
 
             initializeElements() {
@@ -1057,9 +1373,11 @@
                 this.storageUsed = document.getElementById('storageUsed');
                 this.localStorage = document.getElementById('localStorage');
                 
-                // Password modal
+                // Password modal - FIXED
                 this.passwordModal = document.getElementById('passwordModal');
                 this.passwordInput = document.getElementById('passwordInput');
+                this.passwordTitle = document.getElementById('passwordTitle');
+                this.passwordMessage = document.getElementById('passwordMessage');
                 this.unlockBtn = document.getElementById('unlockBtn');
                 this.setupBtn = document.getElementById('setupBtn');
                 
@@ -1067,13 +1385,16 @@
                 this.toast = document.getElementById('toast');
                 this.toastClose = document.getElementById('toastClose');
                 
-                // Theme toggle
-                this.themeToggle = document.getElementById('themeToggle');
+                // Theme selector
+                this.themeOptions = document.querySelectorAll('.theme-option');
             }
 
             attachEvents() {
                 // Navigation
                 this.portal.addEventListener('click', () => this.showDrivePage());
+                this.portal.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') this.showDrivePage();
+                });
                 this.backButton.addEventListener('click', () => this.showLandingPage());
                 
                 // File operations
@@ -1096,53 +1417,108 @@
                     this.handleFileUpload(e.dataTransfer.files);
                 });
                 
-                // Password modal
+                // Password modal - FIXED
                 this.unlockBtn.addEventListener('click', () => this.unlockDrive());
                 this.setupBtn.addEventListener('click', () => this.setupDrive());
                 this.passwordInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.unlockDrive();
+                    if (e.key === 'Enter') {
+                        if (this.drive.settings.password) {
+                            this.unlockDrive();
+                        } else {
+                            this.setupDrive();
+                        }
+                    }
                 });
                 
                 // Toast
                 this.toastClose.addEventListener('click', () => this.hideToast());
                 
-                // Theme toggle
-                this.themeToggle.addEventListener('click', () => this.toggleTheme());
+                // Theme selector
+                this.themeOptions.forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        const theme = e.currentTarget.getAttribute('data-theme');
+                        this.switchTheme(theme);
+                    });
+                });
+
+                // Close modal when clicking outside
+                this.passwordModal.addEventListener('click', (e) => {
+                    if (e.target === this.passwordModal) {
+                        this.hidePasswordModal();
+                    }
+                });
+            }
+
+            checkFirstTime() {
+                // Update theme dropdown to show current theme
+                this.updateThemeDropdown();
+            }
+
+            updateThemeDropdown() {
+                const currentTheme = this.drive.settings.theme;
+                this.themeOptions.forEach(option => {
+                    option.classList.toggle('active', option.getAttribute('data-theme') === currentTheme);
+                });
+            }
+
+            switchTheme(theme) {
+                this.drive.applyTheme(theme);
+                this.updateThemeDropdown();
+                this.showToast(`Switched to ${theme === 'space' ? 'Space' : 'Cozy'} theme`);
             }
 
             showDrivePage() {
                 // Check if drive is already setup
-                const hasDrive = localStorage.getItem('space_drive_password');
-                
-                if (!hasDrive) {
-                    this.passwordModal.classList.add('active');
-                    this.passwordInput.focus();
+                if (!this.drive.settings.password) {
+                    this.showPasswordModal(true); // First time setup
                 } else {
-                    this.unlockDrive();
+                    this.showPasswordModal(false); // Regular unlock
                 }
+            }
+
+            showPasswordModal(isFirstTime = false) {
+                if (isFirstTime) {
+                    this.passwordTitle.textContent = 'Setup Secure Drive';
+                    this.passwordMessage.textContent = 'Create a master password for your secure drive';
+                    this.unlockBtn.style.display = 'none';
+                    this.setupBtn.style.display = 'block';
+                } else {
+                    this.passwordTitle.textContent = 'Secure Access';
+                    this.passwordMessage.textContent = 'Enter your master password to unlock the drive';
+                    this.unlockBtn.style.display = 'block';
+                    this.setupBtn.style.display = 'none';
+                }
+                
+                this.passwordModal.classList.add('active');
+                this.passwordInput.value = '';
+                this.passwordInput.focus();
+            }
+
+            hidePasswordModal() {
+                this.passwordModal.classList.remove('active');
             }
 
             async unlockDrive() {
                 const password = this.passwordInput.value.trim();
                 
                 if (!password) {
-                    this.showToast('Please enter a password');
+                    this.showToast('Please enter your password', 'error');
                     return;
                 }
 
                 try {
                     await this.drive.unlockDrive(password);
-                    this.passwordModal.classList.remove('active');
-                    this.passwordInput.value = '';
+                    this.hidePasswordModal();
                     
                     this.landingPage.classList.remove('active');
                     setTimeout(() => {
                         this.drivePage.classList.add('active');
                         this.loadFiles();
-                        this.showToast('Drive unlocked successfully');
+                        this.showToast('Drive unlocked successfully', 'success');
                     }, 400);
                 } catch (error) {
-                    this.showToast('Invalid password');
+                    this.showToast(error.message, 'error');
+                    this.passwordInput.focus();
                 }
             }
 
@@ -1150,25 +1526,28 @@
                 const password = this.passwordInput.value.trim();
                 
                 if (!password) {
-                    this.showToast('Please enter a password');
+                    this.showToast('Please create a password', 'error');
                     return;
                 }
 
                 if (password.length < 4) {
-                    this.showToast('Password must be at least 4 characters');
+                    this.showToast('Password must be at least 4 characters', 'error');
                     return;
                 }
 
-                await this.drive.unlockDrive(password);
-                this.passwordModal.classList.remove('active');
-                this.passwordInput.value = '';
-                
-                this.landingPage.classList.remove('active');
-                setTimeout(() => {
-                    this.drivePage.classList.add('active');
-                    this.loadFiles();
-                    this.showToast('Secure drive created!');
-                }, 400);
+                try {
+                    await this.drive.setupDrive(password);
+                    this.hidePasswordModal();
+                    
+                    this.landingPage.classList.remove('active');
+                    setTimeout(() => {
+                        this.drivePage.classList.add('active');
+                        this.loadFiles();
+                        this.showToast('Secure drive created successfully!', 'success');
+                    }, 400);
+                } catch (error) {
+                    this.showToast(error.message, 'error');
+                }
             }
 
             showLandingPage() {
@@ -1180,20 +1559,28 @@
 
             async handleFileUpload(files) {
                 if (!this.drive.isUnlocked) {
-                    this.showToast('Please unlock drive first');
+                    this.showToast('Please unlock drive first', 'error');
                     return;
                 }
+
+                let successCount = 0;
+                let errorCount = 0;
 
                 for (const file of files) {
                     try {
                         await this.drive.addFile(file);
-                        this.showToast(`Uploaded: ${file.name}`);
+                        successCount++;
                     } catch (error) {
-                        this.showToast(`Failed to upload ${file.name}`);
+                        console.error('Upload error:', error);
+                        errorCount++;
+                        this.showToast(`Failed to upload ${file.name}: ${error.message}`, 'error');
                     }
                 }
 
-                this.loadFiles();
+                if (successCount > 0) {
+                    this.showToast(`Successfully uploaded ${successCount} file(s)`, 'success');
+                    this.loadFiles();
+                }
             }
 
             loadFiles() {
@@ -1220,7 +1607,7 @@
                                 <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="white" stroke-width="2"/>
                             </svg>
                         </div>
-                        <div class="file-name">${file.name}</div>
+                        <div class="file-name">${this.escapeHtml(file.name)}</div>
                         <div class="file-meta">
                             ${this.formatFileSize(file.size)} • ${new Date(file.uploaded).toLocaleDateString()}
                         </div>
@@ -1249,21 +1636,32 @@
 
             downloadFile(fileId) {
                 const file = this.drive.getFile(fileId);
-                if (!file) return;
+                if (!file) {
+                    this.showToast('File not found', 'error');
+                    return;
+                }
 
-                const link = document.createElement('a');
-                link.href = file.content;
-                link.download = file.name;
-                link.click();
-                this.showToast(`Downloaded: ${file.name}`);
+                try {
+                    const link = document.createElement('a');
+                    link.href = file.content;
+                    link.download = file.name;
+                    link.click();
+                    this.showToast(`Downloaded: ${file.name}`, 'success');
+                } catch (error) {
+                    this.showToast('Download failed', 'error');
+                }
             }
 
             deleteFile(fileId) {
                 if (!confirm('Are you sure you want to delete this file?')) return;
                 
-                this.drive.deleteFile(fileId);
-                this.loadFiles();
-                this.showToast('File deleted');
+                try {
+                    this.drive.deleteFile(fileId);
+                    this.loadFiles();
+                    this.showToast('File deleted', 'success');
+                } catch (error) {
+                    this.showToast('Delete failed', 'error');
+                }
             }
 
             updateStats() {
@@ -1284,62 +1682,43 @@
                 else return (bytes / 1048576).toFixed(1) + ' MB';
             }
 
-            showToast(message) {
-                this.toast.querySelector('.toast-message').textContent = message;
-                this.toast.classList.add('visible');
+            escapeHtml(unsafe) {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            showToast(message, type = 'info') {
+                const toast = this.toast;
+                toast.querySelector('.toast-message').textContent = message;
+                
+                // Remove previous type classes
+                toast.classList.remove('success', 'error', 'info');
+                toast.classList.add(type);
+                
+                toast.classList.add('visible');
                 
                 setTimeout(() => {
                     this.hideToast();
-                }, 3000);
+                }, 4000);
             }
 
             hideToast() {
                 this.toast.classList.remove('visible');
             }
-
-            createStars() {
-                const starsContainer = document.getElementById('stars');
-                const starsCount = 150;
-                
-                for (let i = 0; i < starsCount; i++) {
-                    const star = document.createElement('div');
-                    star.classList.add('star');
-                    
-                    const size = Math.random() * 3;
-                    star.style.width = `${size}px`;
-                    star.style.height = `${size}px`;
-                    
-                    star.style.left = `${Math.random() * 100}%`;
-                    star.style.top = `${Math.random() * 100}%`;
-                    
-                    const brightness = 0.2 + Math.random() * 0.8;
-                    star.style.backgroundColor = `rgba(255, 255, 255, ${brightness})`;
-                    
-                    const duration = 3000 + Math.random() * 7000;
-                    const delay = Math.random() * 5000;
-                    star.style.animation = `twinkle ${duration}ms ${delay}ms infinite`;
-                    
-                    starsContainer.appendChild(star);
-                }
-            }
-
-            toggleTheme() {
-                // Simple theme toggle between dark and light
-                const currentTheme = document.documentElement.getAttribute('data-theme');
-                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-                document.documentElement.setAttribute('data-theme', newTheme);
-                localStorage.setItem('space_drive_theme', newTheme);
-            }
         }
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
-            new SpaceDriveUI();
-            
-            // Load saved theme
-            const savedTheme = localStorage.getItem('space_drive_theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', savedTheme);
+            new UniversalDriveUI();
         });
+
+        // Prevent drag and drop default behavior
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => e.preventDefault());
     </script>
 </body>
 </html>
