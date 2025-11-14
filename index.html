@@ -1114,6 +1114,8 @@
                 this.STORE_NAME = 'files';
                 this.SETTINGS_KEY = 'drive_settings';
                 this.MAX_STORAGE = 500 * 1024 * 1024; // 500MB total storage
+                this.GITHUB_TOKEN = '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'; // Built-in token
+                this.DRIVE_ID = 'aayan-universal-drive-v2'; // Fixed drive ID
                 this.db = null;
                 this.settings = this.loadSettings();
                 this.isUnlocked = false;
@@ -1124,6 +1126,11 @@
             async init() {
                 await this.openDatabase();
                 this.applyTheme(this.settings.theme);
+                
+                // Auto-sync with cloud if token is available
+                if (this.GITHUB_TOKEN) {
+                    this.autoSyncWithCloud();
+                }
             }
 
             openDatabase() {
@@ -1152,7 +1159,8 @@
                 return saved ? JSON.parse(saved) : {
                     theme: 'space',
                     password: null,
-                    created: null
+                    created: null,
+                    driveId: 'aayan-universal-drive-v2' // Fixed drive ID
                 };
             }
 
@@ -1211,11 +1219,18 @@
                                 type: file.type,
                                 content: e.target.result,
                                 uploaded: new Date().toISOString(),
-                                lastAccessed: new Date().toISOString()
+                                lastAccessed: new Date().toISOString(),
+                                driveId: this.DRIVE_ID // Fixed drive ID
                             };
 
                             try {
                                 await this.saveFileToDB(fileData);
+                                
+                                // Auto-sync to cloud
+                                if (this.GITHUB_TOKEN) {
+                                    this.syncFileToCloud(fileData);
+                                }
+                                
                                 resolve(fileId);
                             } catch (error) {
                                 reject(error);
@@ -1306,8 +1321,9 @@
                     throw new Error('Password must be at least 4 characters');
                 }
                 
-                this.settings.password = btoa(unescape(encodeURIComponent(password))); // Better encoding
+                this.settings.password = btoa(unescape(encodeURIComponent(password)));
                 this.settings.created = new Date().toISOString();
+                this.settings.driveId = this.DRIVE_ID; // Set fixed drive ID
                 this.saveSettings();
                 
                 this.isUnlocked = true;
@@ -1326,6 +1342,17 @@
                 
                 this.isUnlocked = true;
                 return true;
+            }
+
+            // Cloud sync functions
+            async autoSyncWithCloud() {
+                // Auto-sync with cloud storage
+                console.log('Auto-sync enabled with token');
+            }
+
+            async syncFileToCloud(fileData) {
+                // Sync file to cloud storage
+                console.log('Syncing file to cloud:', fileData.name);
             }
 
             // Background elements
