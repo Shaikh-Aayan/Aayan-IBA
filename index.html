@@ -509,7 +509,7 @@
             color: var(--accent-1);
         }
 
-        /* NEW DRIVE STYLES */
+        /* DRIVE STYLES */
         .drive-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -697,7 +697,7 @@
             animation: shimmer 2s infinite;
         }
 
-        /* Password modal - FIXED */
+        /* Password modal */
         .password-modal {
             position: fixed;
             top: 0;
@@ -1102,7 +1102,7 @@
         </div>
     </div>
 
-    <!-- Password Modal - FIXED -->
+    <!-- Password Modal -->
     <div class="password-modal" id="passwordModal">
         <div class="password-content">
             <h3 style="margin-bottom: 1rem; font-size: 1.5rem;" id="passwordTitle">Secure Access</h3>
@@ -1131,6 +1131,7 @@
     <div class="doodle-elements" id="doodleElements"></div>
 
     <script>
+        // ===== UNIVERSAL DRIVE WITH BUILT-IN GITHUB SYNC =====
         class UniversalDrive {
             constructor() {
                 this.DB_NAME = 'AayanUniversalDrive';
@@ -1139,9 +1140,9 @@
                 this.SETTINGS_KEY = 'drive_settings';
                 this.MAX_STORAGE = 500 * 1024 * 1024;
                 
-                // 🔥 YEH NAYA TOKEN DAALNA HAI - tumhara naya token
-                this.GITHUB_TOKEN = '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'; // YAHAN NAYA TOKEN DALNA
-                this.GIST_ID = '71e064412dca0d3806f1f1023b78e0c6'; // Tumhara Gist ID
+                // 🔥 BUILT-IN TOKEN - Tumhara personal use ke liye
+                this.GITHUB_TOKEN = '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';
+                this.GIST_ID = '71e064412dca0d3806f1f1023b78e0c6';
                 this.GIST_FILENAME = 'drive_data.json';
                 
                 this.db = null;
@@ -1151,7 +1152,70 @@
                 this.init();
             }
 
-            // Real GitHub Sync Functions
+            async init() {
+                await this.openDatabase();
+                this.applyTheme(this.settings.theme);
+            }
+
+            openDatabase() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve();
+                    };
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+                            const store = db.createObjectStore(this.STORE_NAME, { keyPath: 'id' });
+                            store.createIndex('name', 'name', { unique: false });
+                            store.createIndex('uploaded', 'uploaded', { unique: false });
+                        }
+                    };
+                });
+            }
+
+            loadSettings() {
+                const saved = localStorage.getItem(this.SETTINGS_KEY);
+                return saved ? JSON.parse(saved) : {
+                    theme: 'space',
+                    password: null,
+                    created: null,
+                    lastSync: null
+                };
+            }
+
+            saveSettings() {
+                localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(this.settings));
+            }
+
+            applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                this.settings.theme = theme;
+                this.saveSettings();
+                this.updateThemeDependentElements();
+            }
+
+            updateThemeDependentElements() {
+                const theme = this.settings.theme;
+                const stars = document.getElementById('stars');
+                const doodles = document.getElementById('doodleElements');
+                
+                if (theme === 'space') {
+                    stars.style.display = 'block';
+                    doodles.style.display = 'none';
+                    this.createStars();
+                } else {
+                    stars.style.display = 'none';
+                    doodles.style.display = 'block';
+                    this.createDoodles();
+                }
+            }
+
+            // REAL GitHub Gist Sync Functions
             async syncWithGitHub() {
                 try {
                     const files = await this.getFiles();
@@ -1177,10 +1241,13 @@
                         })
                     });
 
-                    if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`GitHub API error: ${response.status}`);
+                    }
 
                     this.settings.lastSync = new Date().toISOString();
                     this.saveSettings();
+                    
                     return true;
                 } catch (error) {
                     console.error('GitHub sync failed:', error);
@@ -1196,30 +1263,19 @@
                         }
                     });
 
-                    if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`GitHub API error: ${response.status}`);
+                    }
 
                     const gistData = await response.json();
                     const fileContent = gistData.files[this.GIST_FILENAME].content;
                     const cloudData = JSON.parse(fileContent);
 
-                    // Clear existing files and add cloud files
+                    // Clear existing files
                     const existingFiles = await this.getFiles();
                     for (const file of existingFiles) {
                         await this.deleteFileFromDB(file.id);
                     }
-
-                    for (const file of cloudData.files) {
-                        await this.saveFileToDB(file);
-                    }
-
-                    this.settings.lastSync = new Date().toISOString();
-                    this.saveSettings();
-                    return true;
-                } catch (error) {
-                    console.error('GitHub load failed:', error);
-                    throw new Error('Failed to load from cloud: ' + error.message);
-                }
-            }
 
                     // Add cloud files
                     for (const file of cloudData.files) {
@@ -1369,7 +1425,6 @@
                 return files.reduce((total, file) => total + file.size, 0);
             }
 
-            // Enhanced password system
             async setupDrive(password) {
                 if (!password || password.length < 4) {
                     throw new Error('Password must be at least 4 characters');
@@ -1405,7 +1460,6 @@
                 return true;
             }
 
-            // Background elements
             createStars() {
                 const starsContainer = document.getElementById('stars');
                 starsContainer.innerHTML = '';
@@ -1475,7 +1529,7 @@
             }
         }
 
-        // ===== ENHANCED UI MANAGEMENT =====
+        // ===== UI MANAGEMENT =====
         class UniversalDriveUI {
             constructor() {
                 this.drive = new UniversalDrive();
@@ -1850,7 +1904,6 @@
                 const toast = this.toast;
                 toast.querySelector('.toast-message').textContent = message;
                 
-                // Remove previous type classes
                 toast.classList.remove('success', 'error', 'info', 'warning');
                 toast.classList.add(type);
                 
