@@ -1131,7 +1131,6 @@
     <div class="doodle-elements" id="doodleElements"></div>
 
     <script>
-        // ===== REAL GITHUB SYNC DRIVE =====
         class UniversalDrive {
             constructor() {
                 this.DB_NAME = 'AayanUniversalDrive';
@@ -1140,9 +1139,9 @@
                 this.SETTINGS_KEY = 'drive_settings';
                 this.MAX_STORAGE = 500 * 1024 * 1024;
                 
-                // GitHub Configuration - REAL SYNC
-                this.GITHUB_TOKEN = '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';
-                this.GIST_ID = '71e064412dca0d3806f1f1023b78e0c6'; // Your actual Gist ID
+                // 🔥 YEH NAYA TOKEN DAALNA HAI - tumhara naya token
+                this.GITHUB_TOKEN = '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'; // YAHAN NAYA TOKEN DALNA
+                this.GIST_ID = '71e064412dca0d3806f1f1023b78e0c6'; // Tumhara Gist ID
                 this.GIST_FILENAME = 'drive_data.json';
                 
                 this.db = null;
@@ -1152,70 +1151,7 @@
                 this.init();
             }
 
-            async init() {
-                await this.openDatabase();
-                this.applyTheme(this.settings.theme);
-            }
-
-            openDatabase() {
-                return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
-                    
-                    request.onerror = () => reject(request.error);
-                    request.onsuccess = () => {
-                        this.db = request.result;
-                        resolve();
-                    };
-                    
-                    request.onupgradeneeded = (event) => {
-                        const db = event.target.result;
-                        if (!db.objectStoreNames.contains(this.STORE_NAME)) {
-                            const store = db.createObjectStore(this.STORE_NAME, { keyPath: 'id' });
-                            store.createIndex('name', 'name', { unique: false });
-                            store.createIndex('uploaded', 'uploaded', { unique: false });
-                        }
-                    };
-                });
-            }
-
-            loadSettings() {
-                const saved = localStorage.getItem(this.SETTINGS_KEY);
-                return saved ? JSON.parse(saved) : {
-                    theme: 'space',
-                    password: null,
-                    created: null,
-                    lastSync: null
-                };
-            }
-
-            saveSettings() {
-                localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(this.settings));
-            }
-
-            applyTheme(theme) {
-                document.documentElement.setAttribute('data-theme', theme);
-                this.settings.theme = theme;
-                this.saveSettings();
-                this.updateThemeDependentElements();
-            }
-
-            updateThemeDependentElements() {
-                const theme = this.settings.theme;
-                const stars = document.getElementById('stars');
-                const doodles = document.getElementById('doodleElements');
-                
-                if (theme === 'space') {
-                    stars.style.display = 'block';
-                    doodles.style.display = 'none';
-                    this.createStars();
-                } else {
-                    stars.style.display = 'none';
-                    doodles.style.display = 'block';
-                    this.createDoodles();
-                }
-            }
-
-            // REAL GitHub Gist Sync Functions
+            // Real GitHub Sync Functions
             async syncWithGitHub() {
                 try {
                     const files = await this.getFiles();
@@ -1225,7 +1161,6 @@
                         version: '2.0'
                     };
 
-                    // Update GitHub Gist
                     const response = await fetch(`https://api.github.com/gists/${this.GIST_ID}`, {
                         method: 'PATCH',
                         headers: {
@@ -1242,13 +1177,10 @@
                         })
                     });
 
-                    if (!response.ok) {
-                        throw new Error(`GitHub API error: ${response.status}`);
-                    }
+                    if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
 
                     this.settings.lastSync = new Date().toISOString();
                     this.saveSettings();
-                    
                     return true;
                 } catch (error) {
                     console.error('GitHub sync failed:', error);
@@ -1264,19 +1196,30 @@
                         }
                     });
 
-                    if (!response.ok) {
-                        throw new Error(`GitHub API error: ${response.status}`);
-                    }
+                    if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
 
                     const gistData = await response.json();
                     const fileContent = gistData.files[this.GIST_FILENAME].content;
                     const cloudData = JSON.parse(fileContent);
 
-                    // Clear existing files
+                    // Clear existing files and add cloud files
                     const existingFiles = await this.getFiles();
                     for (const file of existingFiles) {
                         await this.deleteFileFromDB(file.id);
                     }
+
+                    for (const file of cloudData.files) {
+                        await this.saveFileToDB(file);
+                    }
+
+                    this.settings.lastSync = new Date().toISOString();
+                    this.saveSettings();
+                    return true;
+                } catch (error) {
+                    console.error('GitHub load failed:', error);
+                    throw new Error('Failed to load from cloud: ' + error.message);
+                }
+            }
 
                     // Add cloud files
                     for (const file of cloudData.files) {
