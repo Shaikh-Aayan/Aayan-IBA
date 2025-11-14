@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aayan's Cloud Drive</title>
-    <meta name="description" content="Aayan's cross-device cloud storage using GitHub">
+    <title>Aayan's Universal Drive</title>
+    <meta name="description" content="Aayan's multi-theme secure cloud drive">
     <style>
         /* ===== SPACE THEME (DEFAULT) ===== */
         [data-theme="space"] {
@@ -48,6 +48,8 @@
             --border-radius: 16px;
             --container-width: 90%;
             --max-container-width: 1200px;
+            --grain-opacity: 0.02;
+            --vignette-opacity: 0.3;
         }
 
         * {
@@ -58,7 +60,7 @@
 
         html, body {
             height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-primary);
             overflow-x: hidden;
@@ -71,6 +73,65 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+        }
+
+        /* Theme-specific background effects */
+        [data-theme="space"] body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            opacity: var(--grain-opacity);
+        }
+
+        [data-theme="space"] body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+            background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, var(--vignette-opacity)));
+            opacity: 0.6;
+        }
+
+        [data-theme="cozy"] body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(250, 236, 187, 0.3) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(163, 187, 154, 0.2) 0%, transparent 20%),
+                radial-gradient(circle at 50% 50%, rgba(247, 251, 196, 0.4) 0%, transparent 50%);
+        }
+
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 10px;
+            background: var(--accent-1);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            z-index: 1000;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .skip-link:focus {
+            top: 10px;
         }
 
         /* Header styles */
@@ -97,6 +158,11 @@
             gap: 8px;
         }
 
+        .logo svg {
+            width: 24px;
+            height: 24px;
+        }
+
         .header-controls {
             display: flex;
             align-items: center;
@@ -121,6 +187,70 @@
             color: var(--text-primary);
             border-color: var(--accent-1);
             transform: translateY(-1px);
+        }
+
+        .theme-toggle svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Theme selector dropdown */
+        .theme-selector {
+            position: relative;
+            display: inline-block;
+        }
+
+        .theme-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--border-radius);
+            padding: 8px;
+            min-width: 140px;
+            z-index: 1000;
+            margin-top: 5px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme-selector:hover .theme-dropdown {
+            display: block;
+        }
+
+        .theme-option {
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-option:hover {
+            background: var(--bg-secondary);
+        }
+
+        .theme-option.active {
+            background: var(--accent-1);
+            color: white;
+        }
+
+        .theme-preview {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 1px solid var(--card-border);
+        }
+
+        .theme-preview.space {
+            background: linear-gradient(135deg, #7c3aed, #06b6d4);
+        }
+
+        .theme-preview.cozy {
+            background: linear-gradient(135deg, #57BED6, #CA866E);
         }
 
         /* Main container */
@@ -167,27 +297,39 @@
         }
 
         .greeting {
-            font-size: 3.5rem;
+            font-size: 4rem;
             margin-bottom: 1rem;
             background: linear-gradient(45deg, var(--accent-1), var(--accent-2), var(--accent-3));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        [data-theme="cozy"] .greeting {
+            font-family: 'Georgia', serif;
+            font-weight: normal;
         }
 
         .subheading {
             font-size: 1.2rem;
             color: var(--text-secondary);
             margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .portal-container {
+            animation: fadeInUp 0.8s ease-out 0.4s both;
         }
 
         .portal {
-            width: 160px;
-            height: 160px;
+            width: 180px;
+            height: 180px;
             border-radius: 50%;
             background: var(--card-bg);
             border: 2px solid var(--card-border);
-            box-shadow: 0 0 40px rgba(124, 58, 237, 0.3);
+            box-shadow: 0 0 40px rgba(124, 58, 237, 0.3),
+                        inset 0 0 40px rgba(6, 182, 212, 0.2);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -197,20 +339,67 @@
             transition: all var(--transition-medium);
         }
 
+        [data-theme="cozy"] .portal {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--accent-1);
+        }
+
         .portal:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 50px rgba(124, 58, 237, 0.4);
+            transform: scale(1.04);
+            box-shadow: 0 0 50px rgba(124, 58, 237, 0.4),
+                        inset 0 0 50px rgba(6, 182, 212, 0.3);
+        }
+
+        [data-theme="cozy"] .portal:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .portal:before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px dashed var(--accent-1);
+            animation: rotate 20s linear infinite;
+            opacity: 0.6;
         }
 
         .portal-inner {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
             display: flex;
             justify-content: center;
             align-items: center;
             color: white;
+            font-weight: bold;
+            transition: all var(--transition-medium);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .portal-inner:before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(45deg);
+            transition: all var(--transition-medium);
+        }
+
+        .portal:hover .portal-inner:before {
+            transform: rotate(90deg);
+        }
+
+        .portal-label {
+            margin-top: 20px;
+            color: var(--text-secondary);
+            font-weight: 500;
         }
 
         /* Drive page styles */
@@ -242,12 +431,22 @@
             transform: translateX(-3px);
         }
 
+        .back-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
         .page-title {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 2rem;
             font-size: 2rem;
+        }
+
+        .page-title svg {
+            width: 32px;
+            height: 32px;
         }
 
         .file-card {
@@ -257,12 +456,23 @@
             padding: 2rem;
             margin-bottom: 2rem;
             position: relative;
+            overflow: hidden;
             transition: all var(--transition-medium);
+            backdrop-filter: blur(10px);
         }
 
         .file-card:hover {
             border-color: var(--accent-1);
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.2);
             transform: translateY(-2px);
+        }
+
+        [data-theme="cozy"] .file-card {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="cozy"] .file-card:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
         .btn {
@@ -275,6 +485,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            font-size: 0.95rem;
         }
 
         .btn-primary {
@@ -284,6 +495,7 @@
 
         .btn-primary:hover {
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3);
         }
 
         .btn-secondary {
@@ -297,7 +509,39 @@
             color: var(--accent-1);
         }
 
-        /* Upload Area */
+        /* NEW DRIVE STYLES */
+        .drive-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            text-align: center;
+            transition: all var(--transition-medium);
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent-1);
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
         .upload-area {
             border: 2px dashed var(--card-border);
             border-radius: var(--border-radius);
@@ -311,6 +555,13 @@
 
         .upload-area:hover {
             border-color: var(--accent-1);
+            background: rgba(124, 58, 237, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent-1);
+            background: rgba(124, 58, 237, 0.1);
+            transform: scale(1.02);
         }
 
         .files-grid {
@@ -326,22 +577,59 @@
             border-radius: var(--border-radius);
             padding: 1.5rem;
             transition: all var(--transition-medium);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
         }
 
         .file-item:hover {
             border-color: var(--accent-1);
             transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(124, 58, 237, 0.2);
+        }
+
+        [data-theme="cozy"] .file-item:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
+            transform: scaleX(0);
+            transition: transform var(--transition-medium);
+        }
+
+        .file-item:hover::before {
+            transform: scaleX(1);
         }
 
         .file-icon {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             border-radius: 12px;
             background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .file-icon::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
         }
 
         .file-name {
@@ -362,23 +650,55 @@
         }
 
         .file-action-btn {
-            padding: 6px 12px;
+            padding: 8px 16px;
             border: 1px solid var(--card-border);
             background: transparent;
             color: var(--text-primary);
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             transition: all var(--transition-fast);
+            font-weight: 500;
         }
 
         .file-action-btn:hover {
             border-color: var(--accent-1);
             color: var(--accent-1);
+            transform: translateY(-1px);
         }
 
-        /* Setup Modal */
-        .setup-modal {
+        .storage-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+        }
+
+        .storage-progress {
+            height: 100%;
+            background: linear-gradient(45deg, var(--accent-1), var(--accent-2));
+            border-radius: 4px;
+            transition: width var(--transition-medium);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .storage-progress::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        /* Password modal - FIXED */
+        .password-modal {
             position: fixed;
             top: 0;
             left: 0;
@@ -395,35 +715,49 @@
             transition: all var(--transition-medium);
         }
 
-        .setup-modal.active {
+        .password-modal.active {
             opacity: 1;
             visibility: visible;
         }
 
-        .setup-content {
+        .password-content {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: var(--border-radius);
             padding: 2.5rem;
             width: 90%;
-            max-width: 500px;
+            max-width: 450px;
             text-align: center;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
-        .form-input {
+        .password-input {
             width: 100%;
-            padding: 12px 16px;
+            padding: 14px 16px;
             border: 1px solid var(--card-border);
             border-radius: var(--border-radius);
             background: var(--bg-primary);
             color: var(--text-primary);
-            margin: 1rem 0;
+            margin: 1.5rem 0;
             font-size: 1rem;
+            transition: all var(--transition-fast);
         }
 
-        .form-input:focus {
+        .password-input:focus {
             outline: none;
             border-color: var(--accent-1);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
         }
 
         /* Toast notification */
@@ -434,13 +768,19 @@
             transform: translateX(-50%);
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            padding: 12px 20px;
+            padding: 14px 20px;
             border-radius: var(--border-radius);
             z-index: 1001;
             opacity: 0;
             visibility: hidden;
             transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
             max-width: 90%;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
         .toast.visible {
@@ -448,33 +788,204 @@
             visibility: visible;
         }
 
+        .toast-message {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all var(--transition-fast);
+        }
+
+        .toast-close:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* Background elements */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle linear infinite;
+        }
+
+        /* Cozy doodle elements */
+        .doodle-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.1;
+        }
+
+        .doodle {
+            position: absolute;
+            stroke: var(--text-primary);
+            fill: none;
+            stroke-width: 1.5;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.2;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
         /* Responsive styles */
         @media (max-width: 768px) {
             .greeting {
-                font-size: 2.5rem;
+                font-size: 3rem;
             }
             
             .portal {
-                width: 140px;
-                height: 140px;
+                width: 150px;
+                height: 150px;
+            }
+            
+            .portal-inner {
+                width: 80px;
+                height: 80px;
             }
             
             .files-grid {
                 grid-template-columns: 1fr;
             }
+            
+            .file-actions {
+                flex-direction: column;
+            }
+            
+            .modal-buttons {
+                flex-direction: column;
+            }
+            
+            .drive-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stars, .doodle-elements {
+                display: none;
+            }
+            
+            .password-content {
+                padding: 2rem 1.5rem;
+            }
+        }
+
+        /* Focus styles for accessibility */
+        button:focus-visible,
+        .portal:focus-visible,
+        .file-action-btn:focus-visible,
+        .password-input:focus-visible {
+            outline: 2px solid var(--accent-1);
+            outline-offset: 2px;
         }
     </style>
 </head>
 <body>
+    <!-- Skip link for accessibility -->
+    <a href="#main" class="skip-link">Skip to content</a>
+
     <!-- Header -->
     <header>
         <div class="logo">
-            Aayan's Cloud Drive
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L14 7L19 7L15 10L16 15L12 12L8 15L9 10L5 7L10 7L12 2Z" fill="currentColor"/>
+            </svg>
+            Aayan's Universal Drive
         </div>
         <div class="header-controls">
-            <button class="theme-toggle" id="themeToggle">
-                Theme
-            </button>
+            <div class="theme-selector">
+                <button class="theme-toggle" id="themeToggle">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 2V4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 20V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M4.93 4.93L6.34 6.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M17.66 17.66L19.07 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M20 12H22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M6.34 17.66L4.93 19.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M19.07 4.93L17.66 6.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Theme
+                </button>
+                <div class="theme-dropdown">
+                    <div class="theme-option active" data-theme="space">
+                        <div class="theme-preview space"></div>
+                        Space Theme
+                    </div>
+                    <div class="theme-option" data-theme="cozy">
+                        <div class="theme-preview cozy"></div>
+                        Cozy Theme
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -483,16 +994,18 @@
         <!-- Landing Page -->
         <div class="page active" id="landingPage">
             <div class="landing-content">
-                <h1 class="greeting">Cloud Drive</h1>
-                <p class="subheading">Access your files from anywhere using GitHub</p>
+                <h1 class="greeting">Universal Drive</h1>
+                <p class="subheading">Your secure cloud storage across themes</p>
                 
                 <div class="portal-container">
-                    <div class="portal" id="portal">
+                    <div class="portal" id="portal" tabindex="0" role="button">
                         <div class="portal-inner">
-                            📁
+                            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2V22M12 2L16 6M12 2L8 6M12 22L16 18M12 22L8 18" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </div>
                     </div>
-                    <p class="portal-label">Click to access your drive</p>
+                    <p class="portal-label">Access your secure drive</p>
                 </div>
             </div>
         </div>
@@ -500,250 +1013,398 @@
         <!-- Drive Page -->
         <div class="page" id="drivePage">
             <button class="back-button" id="backButton">
-                ←
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
             </button>
             
             <div class="drive-content">
                 <h2 class="page-title">
-                    My Cloud Drive
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L14 7L19 7L15 10L16 15L12 12L8 15L9 10L5 7L10 7L12 2Z" fill="currentColor"/>
+                    </svg>
+                    My Secure Drive
                 </h2>
-
-                <!-- Setup Instructions -->
-                <div class="file-card" id="setupSection">
-                    <h3 style="margin-bottom: 1rem;">🚀 Setup Required</h3>
-                    <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
-                        To use cross-device cloud storage, you need to create a <strong>GitHub Personal Access Token</strong>.
-                        This will allow the app to save your files to your GitHub account.
-                    </p>
-                    
-                    <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: var(--border-radius); margin-bottom: 1.5rem;">
-                        <h4 style="margin-bottom: 1rem;">📝 Steps to Create Token:</h4>
-                        <ol style="text-align: left; margin-left: 1.5rem; color: var(--text-secondary);">
-                            <li>Go to <a href="https://github.com/settings/tokens" target="_blank" style="color: var(--accent-1);">GitHub Settings → Tokens</a></li>
-                            <li>Click "Generate new token"</li>
-                            <li>Give it a name like "My Cloud Drive"</li>
-                            <li>Select <strong>Only "gist" permission</strong></li>
-                            <li>Click "Generate token"</li>
-                            <li>Copy the token and paste it below</li>
-                        </ol>
+                
+                <!-- Drive Stats -->
+                <div class="drive-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="fileCount">0</div>
+                        <div>Files</div>
                     </div>
-
-                    <div class="form-group">
-                        <input type="text" class="form-input" id="githubToken" placeholder="Paste your GitHub token here">
-                        <input type="text" class="form-input" id="gistId" placeholder="Leave empty for new drive (optional)">
+                    <div class="stat-card">
+                        <div class="stat-number" id="storageUsed">0 MB</div>
+                        <div>Storage Used</div>
                     </div>
-                    
-                    <button class="btn btn-primary" id="saveConfig" style="width: 100%; margin-top: 1rem;">
-                        Save Configuration & Continue
-                    </button>
+                    <div class="stat-card">
+                        <div class="stat-number">∞</div>
+                        <div>Cloud Storage</div>
+                    </div>
                 </div>
 
-                <!-- Drive Content (hidden until setup) -->
-                <div id="driveContent" style="display: none;">
-                    <!-- Upload Area -->
-                    <div class="file-card">
-                        <h3 style="margin-bottom: 1rem;">Upload Files</h3>
-                        <div class="upload-area" id="uploadArea">
-                            <div style="font-size: 3rem; margin-bottom: 1rem;">📤</div>
-                            <p>Drag & drop files here or click to browse</p>
-                            <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
-                                Files are stored securely in your GitHub account
-                            </p>
-                            <input type="file" id="fileInput" multiple style="display: none;">
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-secondary); margin-top: 1rem;">
-                            <span>💾 Stored in: <span id="gistLink">GitHub Gist</span></span>
-                            <button class="btn-secondary" id="resetConfig" style="padding: 6px 12px; font-size: 0.8rem;">
-                                Reset Config
-                            </button>
-                        </div>
+                <!-- Upload Area -->
+                <div class="file-card">
+                    <h3 style="margin-bottom: 1rem;">Upload Files</h3>
+                    <div class="upload-area" id="uploadArea">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
+                            <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="var(--accent-1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 2V8H20" stroke="var(--accent-1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16 13H8" stroke="var(--accent-1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16 17H8" stroke="var(--accent-1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M10 9H9H8" stroke="var(--accent-1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <p>Drag & drop files here or click to browse</p>
+                        <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
+                            Files are encrypted and stored securely in the cloud
+                        </p>
+                        <input type="file" id="fileInput" multiple style="display: none;">
                     </div>
+                    
+                    <div class="storage-bar">
+                        <div class="storage-progress" id="storageProgress" style="width: 0%"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-secondary);">
+                        <span>Local cache: <span id="localStorage">0 MB</span></span>
+                        <span>Cloud: Unlimited</span>
+                    </div>
+                </div>
 
-                    <!-- Files Grid -->
-                    <div class="files-grid" id="filesGrid">
-                        <!-- Files will be loaded here -->
-                    </div>
+                <!-- Files Grid -->
+                <div class="files-grid" id="filesGrid">
+                    <!-- Files will be loaded here -->
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Password Modal - FIXED -->
+    <div class="password-modal" id="passwordModal">
+        <div class="password-content">
+            <h3 style="margin-bottom: 1rem; font-size: 1.5rem;" id="passwordTitle">Secure Access</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;" id="passwordMessage">
+                Enter your master password to unlock the drive
+            </p>
+            <input type="password" class="password-input" id="passwordInput" placeholder="Your master password" autocomplete="current-password">
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="unlockBtn">Unlock Drive</button>
+                <button class="btn btn-secondary" id="setupBtn">First Time Setup</button>
+            </div>
+            <p style="color: var(--text-secondary); margin-top: 1.5rem; font-size: 0.85rem;">
+                <strong>Note:</strong> This password protects your local data. Use the same password on all devices.
+            </p>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast">
+        <div class="toast-message"></div>
+        <button class="toast-close" id="toastClose">×</button>
+    </div>
+
+    <!-- Background elements -->
+    <div class="stars" id="stars"></div>
+    <div class="doodle-elements" id="doodleElements"></div>
 
     <script>
-        // ===== GITHUB CLOUD DRIVE SYSTEM =====
-        class GitHubCloudDrive {
+        // ===== ENHANCED SECURE DRIVE WITH INDEXEDDB =====
+        class UniversalDrive {
             constructor() {
-                this.config = this.loadConfig();
-                this.files = [];
-                this.isInitialized = false;
+                this.DB_NAME = 'AayanUniversalDrive';
+                this.DB_VERSION = 2;
+                this.STORE_NAME = 'files';
+                this.SETTINGS_KEY = 'drive_settings';
+                this.MAX_STORAGE = 500 * 1024 * 1024; // 500MB total storage
+                this.db = null;
+                this.settings = this.loadSettings();
+                this.isUnlocked = false;
+                
+                this.init();
             }
 
-            loadConfig() {
-                const saved = localStorage.getItem('github_drive_config');
+            async init() {
+                await this.openDatabase();
+                this.applyTheme(this.settings.theme);
+            }
+
+            openDatabase() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve();
+                    };
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+                            const store = db.createObjectStore(this.STORE_NAME, { keyPath: 'id' });
+                            store.createIndex('name', 'name', { unique: false });
+                            store.createIndex('uploaded', 'uploaded', { unique: false });
+                        }
+                    };
+                });
+            }
+
+            loadSettings() {
+                const saved = localStorage.getItem(this.SETTINGS_KEY);
                 return saved ? JSON.parse(saved) : {
-                    token: '',
-                    gistId: '',
-                    theme: 'space'
+                    theme: 'space',
+                    password: null,
+                    created: null
                 };
             }
 
-            saveConfig() {
-                localStorage.setItem('github_drive_config', JSON.stringify(this.config));
+            saveSettings() {
+                localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(this.settings));
             }
 
-            async initialize() {
-                if (!this.config.token) {
-                    throw new Error('GitHub token not configured');
-                }
-
-                // Load files from Gist
-                if (this.config.gistId) {
-                    await this.loadFromGist();
-                } else {
-                    // Create new Gist
-                    await this.createGist();
-                }
-
-                this.isInitialized = true;
+            applyTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                this.settings.theme = theme;
+                this.saveSettings();
+                this.updateThemeDependentElements();
             }
 
-            async createGist() {
-                const response = await fetch('https://api.github.com/gists', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `token ${this.config.token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        description: 'Aayan Cloud Drive - File Storage',
-                        public: false,
-                        files: {
-                            'drive_data.json': {
-                                content: JSON.stringify({ files: [], created: new Date().toISOString() })
-                            }
-                        }
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to create Gist. Check your token.');
-                }
-
-                const data = await response.json();
-                this.config.gistId = data.id;
-                this.saveConfig();
+            updateThemeDependentElements() {
+                const theme = this.settings.theme;
+                const stars = document.getElementById('stars');
+                const doodles = document.getElementById('doodleElements');
                 
-                return data.id;
-            }
-
-            async loadFromGist() {
-                const response = await fetch(`https://api.github.com/gists/${this.config.gistId}`, {
-                    headers: {
-                        'Authorization': `token ${this.config.token}`,
-                    }
-                });
-
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error('Gist not found. Creating new drive...');
-                    }
-                    throw new Error('Failed to load Gist');
-                }
-
-                const data = await response.json();
-                const driveData = JSON.parse(data.files['drive_data.json'].content);
-                this.files = driveData.files || [];
-            }
-
-            async saveToGist() {
-                const response = await fetch(`https://api.github.com/gists/${this.config.gistId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `token ${this.config.token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        description: 'Aayan Cloud Drive - File Storage',
-                        files: {
-                            'drive_data.json': {
-                                content: JSON.stringify({
-                                    files: this.files,
-                                    updated: new Date().toISOString()
-                                })
-                            }
-                        }
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to save to Gist');
+                if (theme === 'space') {
+                    stars.style.display = 'block';
+                    doodles.style.display = 'none';
+                    this.createStars();
+                } else {
+                    stars.style.display = 'none';
+                    doodles.style.display = 'block';
+                    this.createDoodles();
                 }
             }
 
             async addFile(file) {
+                if (!this.db) await this.openDatabase();
+                
                 return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    
-                    reader.onload = async (e) => {
-                        const fileData = {
-                            id: 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                            name: file.name,
-                            size: file.size,
-                            type: file.type,
-                            content: e.target.result,
-                            uploaded: new Date().toISOString()
-                        };
+                    // Check file size
+                    if (file.size > 50 * 1024 * 1024) { // 50MB limit per file
+                        reject(new Error('File size too large (max 50MB)'));
+                        return;
+                    }
 
-                        this.files.push(fileData);
+                    // Check total storage
+                    this.getTotalSize().then(totalSize => {
+                        if (totalSize + file.size > this.MAX_STORAGE) {
+                            reject(new Error('Storage limit exceeded. Maximum 500MB allowed.'));
+                            return;
+                        }
+
+                        const fileId = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                        const reader = new FileReader();
                         
-                        try {
-                            await this.saveToGist();
-                            resolve(fileData.id);
-                        } catch (error) {
-                            // Remove file if save failed
-                            this.files = this.files.filter(f => f.id !== fileData.id);
-                            reject(error);
+                        reader.onload = async (e) => {
+                            const fileData = {
+                                id: fileId,
+                                name: file.name,
+                                size: file.size,
+                                type: file.type,
+                                content: e.target.result,
+                                uploaded: new Date().toISOString(),
+                                lastAccessed: new Date().toISOString()
+                            };
+
+                            try {
+                                await this.saveFileToDB(fileData);
+                                resolve(fileId);
+                            } catch (error) {
+                                reject(error);
+                            }
+                        };
+                        
+                        reader.onerror = () => reject(new Error('Failed to read file'));
+                        reader.readAsDataURL(file);
+                    }).catch(reject);
+                });
+            }
+
+            saveFileToDB(fileData) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(this.STORE_NAME);
+                    const request = store.add(fileData);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async getFile(fileId) {
+                if (!this.db) await this.openDatabase();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.STORE_NAME], 'readonly');
+                    const store = transaction.objectStore(this.STORE_NAME);
+                    const request = store.get(fileId);
+                    
+                    request.onsuccess = () => {
+                        const file = request.result;
+                        if (file) {
+                            // Update last accessed
+                            file.lastAccessed = new Date().toISOString();
+                            this.saveFileToDB(file);
+                            resolve(file);
+                        } else {
+                            reject(new Error('File not found'));
                         }
                     };
                     
-                    reader.onerror = () => reject(new Error('Failed to read file'));
-                    reader.readAsDataURL(file);
+                    request.onerror = () => reject(request.error);
                 });
             }
 
             async deleteFile(fileId) {
-                this.files = this.files.filter(f => f.id !== fileId);
-                await this.saveToGist();
+                if (!this.db) await this.openDatabase();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(this.STORE_NAME);
+                    const request = store.delete(fileId);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
             }
 
-            getFiles() {
-                return this.files.sort((a, b) => new Date(b.uploaded) - new Date(a.uploaded));
+            async getFiles() {
+                if (!this.db) await this.openDatabase();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.STORE_NAME], 'readonly');
+                    const store = transaction.objectStore(this.STORE_NAME);
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => {
+                        const files = request.result.sort((a, b) => 
+                            new Date(b.uploaded) - new Date(a.uploaded)
+                        );
+                        resolve(files);
+                    };
+                    
+                    request.onerror = () => reject(request.error);
+                });
             }
 
-            getFile(fileId) {
-                return this.files.find(f => f.id === fileId);
+            async getTotalSize() {
+                const files = await this.getFiles();
+                return files.reduce((total, file) => total + file.size, 0);
             }
 
-            // Reset configuration
-            resetConfig() {
-                this.config = { token: '', gistId: '', theme: 'space' };
-                this.files = [];
-                this.isInitialized = false;
-                this.saveConfig();
+            // Enhanced password system
+            async setupDrive(password) {
+                if (!password || password.length < 4) {
+                    throw new Error('Password must be at least 4 characters');
+                }
+                
+                this.settings.password = btoa(unescape(encodeURIComponent(password))); // Better encoding
+                this.settings.created = new Date().toISOString();
+                this.saveSettings();
+                
+                this.isUnlocked = true;
+                return true;
+            }
+
+            async unlockDrive(password) {
+                if (!this.settings.password) {
+                    throw new Error('Drive not set up. Please use first time setup.');
+                }
+                
+                const encodedPassword = btoa(unescape(encodeURIComponent(password)));
+                if (encodedPassword !== this.settings.password) {
+                    throw new Error('Invalid password');
+                }
+                
+                this.isUnlocked = true;
+                return true;
+            }
+
+            // Background elements
+            createStars() {
+                const starsContainer = document.getElementById('stars');
+                starsContainer.innerHTML = '';
+                
+                const starsCount = 150;
+                for (let i = 0; i < starsCount; i++) {
+                    const star = document.createElement('div');
+                    star.classList.add('star');
+                    
+                    const size = Math.random() * 3;
+                    star.style.width = `${size}px`;
+                    star.style.height = `${size}px`;
+                    
+                    star.style.left = `${Math.random() * 100}%`;
+                    star.style.top = `${Math.random() * 100}%`;
+                    
+                    const brightness = 0.2 + Math.random() * 0.8;
+                    star.style.backgroundColor = `rgba(255, 255, 255, ${brightness})`;
+                    
+                    const duration = 3000 + Math.random() * 7000;
+                    const delay = Math.random() * 5000;
+                    star.style.animation = `twinkle ${duration}ms ${delay}ms infinite`;
+                    
+                    starsContainer.appendChild(star);
+                }
+            }
+
+            createDoodles() {
+                const doodlesContainer = document.getElementById('doodleElements');
+                doodlesContainer.innerHTML = '';
+                
+                const shapes = ['circle', 'square', 'triangle', 'line'];
+                const colors = ['var(--accent-1)', 'var(--accent-2)', 'var(--accent-3)', 'var(--accent-4)'];
+                
+                for (let i = 0; i < 20; i++) {
+                    const doodle = document.createElement('div');
+                    doodle.className = 'doodle';
+                    
+                    const size = 20 + Math.random() * 60;
+                    const left = Math.random() * 100;
+                    const top = Math.random() * 100;
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    const rotation = Math.random() * 360;
+                    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                    
+                    doodle.style.width = `${size}px`;
+                    doodle.style.height = `${size}px`;
+                    doodle.style.left = `${left}%`;
+                    doodle.style.top = `${top}%`;
+                    doodle.style.border = `1.5px solid ${color}`;
+                    doodle.style.transform = `rotate(${rotation}deg)`;
+                    
+                    if (shape === 'circle') {
+                        doodle.style.borderRadius = '50%';
+                    } else if (shape === 'triangle') {
+                        doodle.style.border = 'none';
+                        doodle.style.borderLeft = `${size/2}px solid transparent`;
+                        doodle.style.borderRight = `${size/2}px solid transparent`;
+                        doodle.style.borderBottom = `${size}px solid ${color}`;
+                        doodle.style.background = 'none';
+                        doodle.style.width = '0';
+                        doodle.style.height = '0';
+                    }
+                    
+                    doodlesContainer.appendChild(doodle);
+                }
             }
         }
 
-        // ===== UI MANAGEMENT =====
-        class CloudDriveUI {
+        // ===== ENHANCED UI MANAGEMENT =====
+        class UniversalDriveUI {
             constructor() {
-                this.drive = new GitHubCloudDrive();
+                this.drive = new UniversalDrive();
                 this.initializeElements();
                 this.attachEvents();
-                this.applyTheme(this.drive.config.theme);
-                this.checkSetup();
+                this.checkFirstTime();
             }
 
             initializeElements() {
@@ -755,35 +1416,38 @@
                 this.portal = document.getElementById('portal');
                 this.backButton = document.getElementById('backButton');
                 
-                // Setup section
-                this.setupSection = document.getElementById('setupSection');
-                this.driveContent = document.getElementById('driveContent');
-                this.githubToken = document.getElementById('githubToken');
-                this.gistId = document.getElementById('gistId');
-                this.saveConfig = document.getElementById('saveConfig');
-                this.resetConfig = document.getElementById('resetConfig');
-                this.gistLink = document.getElementById('gistLink');
-                
                 // Drive elements
                 this.uploadArea = document.getElementById('uploadArea');
                 this.fileInput = document.getElementById('fileInput');
                 this.filesGrid = document.getElementById('filesGrid');
+                this.storageProgress = document.getElementById('storageProgress');
+                this.fileCount = document.getElementById('fileCount');
+                this.storageUsed = document.getElementById('storageUsed');
+                this.localStorage = document.getElementById('localStorage');
+                
+                // Password modal
+                this.passwordModal = document.getElementById('passwordModal');
+                this.passwordInput = document.getElementById('passwordInput');
+                this.passwordTitle = document.getElementById('passwordTitle');
+                this.passwordMessage = document.getElementById('passwordMessage');
+                this.unlockBtn = document.getElementById('unlockBtn');
+                this.setupBtn = document.getElementById('setupBtn');
                 
                 // Toast
                 this.toast = document.getElementById('toast');
+                this.toastClose = document.getElementById('toastClose');
                 
-                // Theme toggle
-                this.themeToggle = document.getElementById('themeToggle');
+                // Theme selector
+                this.themeOptions = document.querySelectorAll('.theme-option');
             }
 
             attachEvents() {
                 // Navigation
                 this.portal.addEventListener('click', () => this.showDrivePage());
+                this.portal.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') this.showDrivePage();
+                });
                 this.backButton.addEventListener('click', () => this.showLandingPage());
-                
-                // Setup
-                this.saveConfig.addEventListener('click', () => this.saveConfiguration());
-                this.resetConfig.addEventListener('click', () => this.resetConfiguration());
                 
                 // File operations
                 this.uploadArea.addEventListener('click', () => this.fileInput.click());
@@ -792,85 +1456,148 @@
                 // Drag and drop
                 this.uploadArea.addEventListener('dragover', (e) => {
                     e.preventDefault();
-                    this.uploadArea.style.borderColor = 'var(--accent-1)';
-                    this.uploadArea.style.background = 'rgba(124, 58, 237, 0.05)';
+                    this.uploadArea.classList.add('dragover');
                 });
                 
                 this.uploadArea.addEventListener('dragleave', () => {
-                    this.uploadArea.style.borderColor = '';
-                    this.uploadArea.style.background = '';
+                    this.uploadArea.classList.remove('dragover');
                 });
                 
                 this.uploadArea.addEventListener('drop', (e) => {
                     e.preventDefault();
-                    this.uploadArea.style.borderColor = '';
-                    this.uploadArea.style.background = '';
+                    this.uploadArea.classList.remove('dragover');
                     this.handleFileUpload(e.dataTransfer.files);
                 });
                 
-                // Theme toggle
-                this.themeToggle.addEventListener('click', () => this.toggleTheme());
+                // Password modal
+                this.unlockBtn.addEventListener('click', () => this.unlockDrive());
+                this.setupBtn.addEventListener('click', () => this.setupDrive());
+                this.passwordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        if (this.drive.settings.password) {
+                            this.unlockDrive();
+                        } else {
+                            this.setupDrive();
+                        }
+                    }
+                });
+                
+                // Toast
+                this.toastClose.addEventListener('click', () => this.hideToast());
+                
+                // Theme selector
+                this.themeOptions.forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        const theme = e.currentTarget.getAttribute('data-theme');
+                        this.switchTheme(theme);
+                    });
+                });
+
+                // Close modal when clicking outside
+                this.passwordModal.addEventListener('click', (e) => {
+                    if (e.target === this.passwordModal) {
+                        this.hidePasswordModal();
+                    }
+                });
             }
 
-            checkSetup() {
-                // Pre-fill form if config exists
-                if (this.drive.config.token) {
-                    this.githubToken.value = this.drive.config.token;
-                    if (this.drive.config.gistId) {
-                        this.gistId.value = this.drive.config.gistId;
-                    }
+            checkFirstTime() {
+                this.updateThemeDropdown();
+            }
+
+            updateThemeDropdown() {
+                const currentTheme = this.drive.settings.theme;
+                this.themeOptions.forEach(option => {
+                    option.classList.toggle('active', option.getAttribute('data-theme') === currentTheme);
+                });
+            }
+
+            switchTheme(theme) {
+                this.drive.applyTheme(theme);
+                this.updateThemeDropdown();
+                this.showToast(`Switched to ${theme === 'space' ? 'Space' : 'Cozy'} theme`, 'success');
+            }
+
+            showDrivePage() {
+                if (!this.drive.settings.password) {
+                    this.showPasswordModal(true);
+                } else {
+                    this.showPasswordModal(false);
                 }
             }
 
-            async saveConfiguration() {
-                const token = this.githubToken.value.trim();
-                const gistId = this.gistId.value.trim();
+            showPasswordModal(isFirstTime = false) {
+                if (isFirstTime) {
+                    this.passwordTitle.textContent = 'Setup Secure Drive';
+                    this.passwordMessage.textContent = 'Create a master password for your secure drive';
+                    this.unlockBtn.style.display = 'none';
+                    this.setupBtn.style.display = 'block';
+                } else {
+                    this.passwordTitle.textContent = 'Secure Access';
+                    this.passwordMessage.textContent = 'Enter your master password to unlock the drive';
+                    this.unlockBtn.style.display = 'block';
+                    this.setupBtn.style.display = 'none';
+                }
+                
+                this.passwordModal.classList.add('active');
+                this.passwordInput.value = '';
+                this.passwordInput.focus();
+            }
 
-                if (!token) {
-                    this.showToast('Please enter your GitHub token', 'error');
+            hidePasswordModal() {
+                this.passwordModal.classList.remove('active');
+            }
+
+            async unlockDrive() {
+                const password = this.passwordInput.value.trim();
+                
+                if (!password) {
+                    this.showToast('Please enter your password', 'error');
                     return;
                 }
 
                 try {
-                    this.drive.config.token = token;
-                    if (gistId) {
-                        this.drive.config.gistId = gistId;
-                    }
+                    await this.drive.unlockDrive(password);
+                    this.hidePasswordModal();
                     
-                    this.drive.saveConfig();
-                    await this.drive.initialize();
+                    this.landingPage.classList.remove('active');
+                    setTimeout(() => {
+                        this.drivePage.classList.add('active');
+                        this.loadFiles();
+                        this.showToast('Drive unlocked successfully', 'success');
+                    }, 400);
+                } catch (error) {
+                    this.showToast(error.message, 'error');
+                    this.passwordInput.focus();
+                }
+            }
+
+            async setupDrive() {
+                const password = this.passwordInput.value.trim();
+                
+                if (!password) {
+                    this.showToast('Please create a password', 'error');
+                    return;
+                }
+
+                if (password.length < 4) {
+                    this.showToast('Password must be at least 4 characters', 'error');
+                    return;
+                }
+
+                try {
+                    await this.drive.setupDrive(password);
+                    this.hidePasswordModal();
                     
-                    this.setupSection.style.display = 'none';
-                    this.driveContent.style.display = 'block';
-                    
-                    // Update Gist link
-                    if (this.drive.config.gistId) {
-                        this.gistLink.innerHTML = `<a href="https://gist.github.com/${this.drive.config.gistId}" target="_blank" style="color: var(--accent-1);">View on GitHub</a>`;
-                    }
-                    
-                    this.loadFiles();
-                    this.showToast('Drive configured successfully!', 'success');
+                    this.landingPage.classList.remove('active');
+                    setTimeout(() => {
+                        this.drivePage.classList.add('active');
+                        this.loadFiles();
+                        this.showToast('Secure drive created successfully!', 'success');
+                    }, 400);
                 } catch (error) {
                     this.showToast(error.message, 'error');
                 }
-            }
-
-            resetConfiguration() {
-                if (confirm('Are you sure? This will remove your current configuration.')) {
-                    this.drive.resetConfig();
-                    this.setupSection.style.display = 'block';
-                    this.driveContent.style.display = 'none';
-                    this.githubToken.value = '';
-                    this.gistId.value = '';
-                    this.showToast('Configuration reset', 'info');
-                }
-            }
-
-            showDrivePage() {
-                this.landingPage.classList.remove('active');
-                setTimeout(() => {
-                    this.drivePage.classList.add('active');
-                }, 400);
             }
 
             showLandingPage() {
@@ -881,8 +1608,8 @@
             }
 
             async handleFileUpload(files) {
-                if (!this.drive.isInitialized) {
-                    this.showToast('Please configure drive first', 'error');
+                if (!this.drive.isUnlocked) {
+                    this.showToast('Please unlock drive first', 'error');
                     return;
                 }
 
@@ -902,18 +1629,21 @@
 
                 if (successCount > 0) {
                     this.showToast(`Successfully uploaded ${successCount} file(s)`, 'success');
-                    this.loadFiles();
+                    await this.loadFiles();
                 }
             }
 
             async loadFiles() {
                 try {
-                    const files = this.drive.getFiles();
+                    const files = await this.drive.getFiles();
+                    this.updateStats(files);
 
                     if (files.length === 0) {
                         this.filesGrid.innerHTML = `
                             <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-secondary);">
-                                <div style="font-size: 4rem; margin-bottom: 1rem;">📁</div>
+                                <svg viewBox="0 0 24 24" width="64" height="64" fill="none" style="margin-bottom: 1rem; opacity: 0.5;">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2"/>
+                                </svg>
                                 <h3 style="margin-bottom: 0.5rem;">No files yet</h3>
                                 <p>Upload your first file to get started</p>
                             </div>
@@ -924,7 +1654,9 @@
                     this.filesGrid.innerHTML = files.map(file => `
                         <div class="file-item">
                             <div class="file-icon">
-                                📄
+                                <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="white" stroke-width="2"/>
+                                </svg>
                             </div>
                             <div class="file-name">${this.escapeHtml(file.name)}</div>
                             <div class="file-meta">
@@ -956,14 +1688,9 @@
                 }
             }
 
-            downloadFile(fileId) {
-                const file = this.drive.getFile(fileId);
-                if (!file) {
-                    this.showToast('File not found', 'error');
-                    return;
-                }
-
+            async downloadFile(fileId) {
                 try {
+                    const file = await this.drive.getFile(fileId);
                     const link = document.createElement('a');
                     link.href = file.content;
                     link.download = file.name;
@@ -979,10 +1706,26 @@
                 
                 try {
                     await this.drive.deleteFile(fileId);
-                    this.loadFiles();
+                    await this.loadFiles();
                     this.showToast('File deleted', 'success');
                 } catch (error) {
                     this.showToast('Delete failed', 'error');
+                }
+            }
+
+            async updateStats(files = null) {
+                try {
+                    if (!files) files = await this.drive.getFiles();
+                    const totalSize = await this.drive.getTotalSize();
+                    const usedMB = (totalSize / (1024 * 1024)).toFixed(1);
+                    const percentage = Math.min((totalSize / this.drive.MAX_STORAGE) * 100, 100);
+
+                    this.fileCount.textContent = files.length;
+                    this.storageUsed.textContent = `${usedMB} MB`;
+                    this.localStorage.textContent = `${usedMB} MB`;
+                    this.storageProgress.style.width = `${percentage}%`;
+                } catch (error) {
+                    console.error('Failed to update stats:', error);
                 }
             }
 
@@ -1002,32 +1745,28 @@
             }
 
             showToast(message, type = 'info') {
-                this.toast.textContent = message;
-                this.toast.className = `toast ${type}`;
-                this.toast.classList.add('visible');
+                const toast = this.toast;
+                toast.querySelector('.toast-message').textContent = message;
+                
+                // Remove previous type classes
+                toast.classList.remove('success', 'error', 'info', 'warning');
+                toast.classList.add(type);
+                
+                toast.classList.add('visible');
                 
                 setTimeout(() => {
-                    this.toast.classList.remove('visible');
+                    this.hideToast();
                 }, 4000);
             }
 
-            applyTheme(theme) {
-                document.documentElement.setAttribute('data-theme', theme);
-                this.drive.config.theme = theme;
-                this.drive.saveConfig();
-            }
-
-            toggleTheme() {
-                const currentTheme = this.drive.config.theme;
-                const newTheme = currentTheme === 'space' ? 'cozy' : 'space';
-                this.applyTheme(newTheme);
-                this.showToast(`Switched to ${newTheme} theme`, 'success');
+            hideToast() {
+                this.toast.classList.remove('visible');
             }
         }
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
-            new CloudDriveUI();
+            new UniversalDriveUI();
         });
 
         // Prevent drag and drop default behavior
@@ -1035,4 +1774,4 @@
         document.addEventListener('drop', (e) => e.preventDefault());
     </script>
 </body>
-</html>s
+</html>
