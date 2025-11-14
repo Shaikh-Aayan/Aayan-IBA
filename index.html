@@ -846,6 +846,21 @@
             stroke-width: 1.5;
         }
 
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         /* Animations */
         @keyframes fadeInUp {
             from {
@@ -1037,8 +1052,8 @@
                         <div>Storage Used</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number">∞</div>
-                        <div>Cloud Storage</div>
+                        <div class="stat-number">500 MB</div>
+                        <div>Total Storage</div>
                     </div>
                 </div>
 
@@ -1055,7 +1070,7 @@
                         </svg>
                         <p>Drag & drop files here or click to browse</p>
                         <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">
-                            Files are encrypted and stored securely in the cloud
+                            Files are stored securely in your browser (up to 500MB)
                         </p>
                         <input type="file" id="fileInput" multiple style="display: none;">
                     </div>
@@ -1064,8 +1079,7 @@
                         <div class="storage-progress" id="storageProgress" style="width: 0%"></div>
                     </div>
                     <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-secondary);">
-                        <span>Local cache: <span id="localStorage">0 MB</span></span>
-                        <span>Cloud: Unlimited</span>
+                        <span id="storageText">0 MB of 500 MB used</span>
                     </div>
                 </div>
 
@@ -1106,17 +1120,45 @@
     <div class="doodle-elements" id="doodleElements"></div>
 
     <script>
-        // ===== ENHANCED SECURE DRIVE SYSTEM =====
+        // ===== ENHANCED SECURE DRIVE WITH INDEXEDDB =====
         class UniversalDrive {
             constructor() {
-                this.CLOUD_STORAGE_KEY = 'aayan_universal_drive';
+                this.DB_NAME = 'AayanUniversalDrive';
+                this.DB_VERSION = 2;
+                this.STORE_NAME = 'files';
                 this.SETTINGS_KEY = 'drive_settings';
-                this.MAX_LOCAL_STORAGE = 100 * 1024 * 1024; // 100MB local cache
-                this.files = new Map();
+                this.MAX_STORAGE = 500 * 1024 * 1024; // 500MB total storage
+                this.db = null;
                 this.settings = this.loadSettings();
                 this.isUnlocked = false;
                 
                 this.init();
+            }
+
+            async init() {
+                await this.openDatabase();
+                this.applyTheme(this.settings.theme);
+            }
+
+            openDatabase() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve();
+                    };
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+                            const store = db.createObjectStore(this.STORE_NAME, { keyPath: 'id' });
+                            store.createIndex('name', 'name', { unique: false });
+                            store.createIndex('uploaded', 'uploaded', { unique: false });
+                        }
+                    };
+                });
             }
 
             loadSettings() {
@@ -1124,7 +1166,7 @@
                 return saved ? JSON.parse(saved) : {
                     theme: 'space',
                     password: null,
-                    lastSync: null
+                    created: null
                 };
             }
 
@@ -1132,35 +1174,15 @@
                 localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(this.settings));
             }
 
-            async init() {
-                // Load files data
-                const driveData = localStorage.getItem(this.CLOUD_STORAGE_KEY);
-                if (driveData) {
-                    try {
-                        const data = JSON.parse(driveData);
-                        this.files = new Map(data.files || []);
-                    } catch (e) {
-                        console.error('Failed to load drive data');
-                    }
-                }
-
-                // Apply saved theme
-                this.applyTheme(this.settings.theme);
-            }
-
             applyTheme(theme) {
                 document.documentElement.setAttribute('data-theme', theme);
                 this.settings.theme = theme;
                 this.saveSettings();
-                
-                // Update UI elements based on theme
                 this.updateThemeDependentElements();
             }
 
             updateThemeDependentElements() {
                 const theme = this.settings.theme;
-                
-                // Show/hide background elements based on theme
                 const stars = document.getElementById('stars');
                 const doodles = document.getElementById('doodleElements');
                 
@@ -1175,78 +1197,121 @@
                 }
             }
 
-            async saveToCloud() {
-                const data = {
-                    files: Array.from(this.files.entries()),
-                    lastSync: new Date().toISOString(),
-                    version: '2.0'
-                };
-                localStorage.setItem(this.CLOUD_STORAGE_KEY, JSON.stringify(data));
-            }
-
             async addFile(file) {
-                const fileId = Date.now() + Math.random();
+                if (!this.db) await this.openDatabase();
                 
                 return new Promise((resolve, reject) => {
                     // Check file size
-                    if (file.size > 10 * 1024 * 1024) { // 10MB limit per file
-                        reject(new Error('File size too large (max 10MB)'));
+                    if (file.size > 50 * 1024 * 1024) { // 50MB limit per file
+                        reject(new Error('File size too large (max 50MB)'));
                         return;
                     }
 
-                    const totalSize = this.getTotalSize() + file.size;
-                    if (totalSize > this.MAX_LOCAL_STORAGE) {
-                        reject(new Error('Storage limit exceeded'));
-                        return;
-                    }
+                    // Check total storage
+                    this.getTotalSize().then(totalSize => {
+                        if (totalSize + file.size > this.MAX_STORAGE) {
+                            reject(new Error('Storage limit exceeded. Maximum 500MB allowed.'));
+                            return;
+                        }
 
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                        const fileData = {
-                            id: fileId,
-                            name: file.name,
-                            size: file.size,
-                            type: file.type,
-                            content: e.target.result,
-                            uploaded: new Date().toISOString(),
-                            lastAccessed: new Date().toISOString()
+                        const fileId = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                        const reader = new FileReader();
+                        
+                        reader.onload = async (e) => {
+                            const fileData = {
+                                id: fileId,
+                                name: file.name,
+                                size: file.size,
+                                type: file.type,
+                                content: e.target.result,
+                                uploaded: new Date().toISOString(),
+                                lastAccessed: new Date().toISOString()
+                            };
+
+                            try {
+                                await this.saveFileToDB(fileData);
+                                resolve(fileId);
+                            } catch (error) {
+                                reject(error);
+                            }
                         };
-
-                        this.files.set(fileId, fileData);
-                        await this.saveToCloud();
-                        resolve(fileId);
-                    };
-                    reader.onerror = () => reject(new Error('Failed to read file'));
-                    reader.readAsDataURL(file);
+                        
+                        reader.onerror = () => reject(new Error('Failed to read file'));
+                        reader.readAsDataURL(file);
+                    }).catch(reject);
                 });
             }
 
-            getFile(fileId) {
-                const file = this.files.get(fileId);
-                if (file) {
-                    file.lastAccessed = new Date().toISOString();
-                    this.saveToCloud();
-                }
-                return file;
+            saveFileToDB(fileData) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(this.STORE_NAME);
+                    const request = store.add(fileData);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
             }
 
-            deleteFile(fileId) {
-                this.files.delete(fileId);
-                return this.saveToCloud();
+            async getFile(fileId) {
+                if (!this.db) await this.openDatabase();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.STORE_NAME], 'readonly');
+                    const store = transaction.objectStore(this.STORE_NAME);
+                    const request = store.get(fileId);
+                    
+                    request.onsuccess = () => {
+                        const file = request.result;
+                        if (file) {
+                            // Update last accessed
+                            file.lastAccessed = new Date().toISOString();
+                            this.saveFileToDB(file);
+                            resolve(file);
+                        } else {
+                            reject(new Error('File not found'));
+                        }
+                    };
+                    
+                    request.onerror = () => reject(request.error);
+                });
             }
 
-            getFiles() {
-                return Array.from(this.files.values()).sort((a, b) => 
-                    new Date(b.uploaded) - new Date(a.uploaded)
-                );
+            async deleteFile(fileId) {
+                if (!this.db) await this.openDatabase();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(this.STORE_NAME);
+                    const request = store.delete(fileId);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
             }
 
-            getTotalSize() {
-                let total = 0;
-                for (const file of this.files.values()) {
-                    total += file.size;
-                }
-                return total;
+            async getFiles() {
+                if (!this.db) await this.openDatabase();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.STORE_NAME], 'readonly');
+                    const store = transaction.objectStore(this.STORE_NAME);
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => {
+                        const files = request.result.sort((a, b) => 
+                            new Date(b.uploaded) - new Date(a.uploaded)
+                        );
+                        resolve(files);
+                    };
+                    
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async getTotalSize() {
+                const files = await this.getFiles();
+                return files.reduce((total, file) => total + file.size, 0);
             }
 
             // Enhanced password system
@@ -1255,8 +1320,8 @@
                     throw new Error('Password must be at least 4 characters');
                 }
                 
-                this.settings.password = btoa(password); // Simple encoding (not secure for production)
-                this.settings.createdAt = new Date().toISOString();
+                this.settings.password = btoa(unescape(encodeURIComponent(password))); // Better encoding
+                this.settings.created = new Date().toISOString();
                 this.saveSettings();
                 
                 this.isUnlocked = true;
@@ -1268,7 +1333,8 @@
                     throw new Error('Drive not set up. Please use first time setup.');
                 }
                 
-                if (btoa(password) !== this.settings.password) {
+                const encodedPassword = btoa(unescape(encodeURIComponent(password)));
+                if (encodedPassword !== this.settings.password) {
                     throw new Error('Invalid password');
                 }
                 
@@ -1371,9 +1437,9 @@
                 this.storageProgress = document.getElementById('storageProgress');
                 this.fileCount = document.getElementById('fileCount');
                 this.storageUsed = document.getElementById('storageUsed');
-                this.localStorage = document.getElementById('localStorage');
+                this.storageText = document.getElementById('storageText');
                 
-                // Password modal - FIXED
+                // Password modal
                 this.passwordModal = document.getElementById('passwordModal');
                 this.passwordInput = document.getElementById('passwordInput');
                 this.passwordTitle = document.getElementById('passwordTitle');
@@ -1417,7 +1483,7 @@
                     this.handleFileUpload(e.dataTransfer.files);
                 });
                 
-                // Password modal - FIXED
+                // Password modal
                 this.unlockBtn.addEventListener('click', () => this.unlockDrive());
                 this.setupBtn.addEventListener('click', () => this.setupDrive());
                 this.passwordInput.addEventListener('keypress', (e) => {
@@ -1450,7 +1516,6 @@
             }
 
             checkFirstTime() {
-                // Update theme dropdown to show current theme
                 this.updateThemeDropdown();
             }
 
@@ -1464,15 +1529,14 @@
             switchTheme(theme) {
                 this.drive.applyTheme(theme);
                 this.updateThemeDropdown();
-                this.showToast(`Switched to ${theme === 'space' ? 'Space' : 'Cozy'} theme`);
+                this.showToast(`Switched to ${theme === 'space' ? 'Space' : 'Cozy'} theme`, 'success');
             }
 
             showDrivePage() {
-                // Check if drive is already setup
                 if (!this.drive.settings.password) {
-                    this.showPasswordModal(true); // First time setup
+                    this.showPasswordModal(true);
                 } else {
-                    this.showPasswordModal(false); // Regular unlock
+                    this.showPasswordModal(false);
                 }
             }
 
@@ -1579,69 +1643,68 @@
 
                 if (successCount > 0) {
                     this.showToast(`Successfully uploaded ${successCount} file(s)`, 'success');
-                    this.loadFiles();
+                    await this.loadFiles();
                 }
             }
 
-            loadFiles() {
-                const files = this.drive.getFiles();
-                this.updateStats();
-
-                if (files.length === 0) {
-                    this.filesGrid.innerHTML = `
-                        <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-secondary);">
-                            <svg viewBox="0 0 24 24" width="64" height="64" fill="none" style="margin-bottom: 1rem; opacity: 0.5;">
-                                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2"/>
-                            </svg>
-                            <h3 style="margin-bottom: 0.5rem;">No files yet</h3>
-                            <p>Upload your first file to get started</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                this.filesGrid.innerHTML = files.map(file => `
-                    <div class="file-item">
-                        <div class="file-icon">
-                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
-                                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="white" stroke-width="2"/>
-                            </svg>
-                        </div>
-                        <div class="file-name">${this.escapeHtml(file.name)}</div>
-                        <div class="file-meta">
-                            ${this.formatFileSize(file.size)} • ${new Date(file.uploaded).toLocaleDateString()}
-                        </div>
-                        <div class="file-actions">
-                            <button class="file-action-btn download-btn" data-id="${file.id}">Download</button>
-                            <button class="file-action-btn delete-btn" data-id="${file.id}">Delete</button>
-                        </div>
-                    </div>
-                `).join('');
-
-                // Add event listeners
-                this.filesGrid.querySelectorAll('.download-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const fileId = e.target.getAttribute('data-id');
-                        this.downloadFile(fileId);
-                    });
-                });
-
-                this.filesGrid.querySelectorAll('.delete-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const fileId = e.target.getAttribute('data-id');
-                        this.deleteFile(fileId);
-                    });
-                });
-            }
-
-            downloadFile(fileId) {
-                const file = this.drive.getFile(fileId);
-                if (!file) {
-                    this.showToast('File not found', 'error');
-                    return;
-                }
-
+            async loadFiles() {
                 try {
+                    const files = await this.drive.getFiles();
+                    this.updateStats(files);
+
+                    if (files.length === 0) {
+                        this.filesGrid.innerHTML = `
+                            <div style="grid-column: 1/-1; text-align: center; padding: 4rem; color: var(--text-secondary);">
+                                <svg viewBox="0 0 24 24" width="64" height="64" fill="none" style="margin-bottom: 1rem; opacity: 0.5;">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <h3 style="margin-bottom: 0.5rem;">No files yet</h3>
+                                <p>Upload your first file to get started</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    this.filesGrid.innerHTML = files.map(file => `
+                        <div class="file-item">
+                            <div class="file-icon">
+                                <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="white" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="file-name">${this.escapeHtml(file.name)}</div>
+                            <div class="file-meta">
+                                ${this.formatFileSize(file.size)} • ${new Date(file.uploaded).toLocaleDateString()}
+                            </div>
+                            <div class="file-actions">
+                                <button class="file-action-btn download-btn" data-id="${file.id}">Download</button>
+                                <button class="file-action-btn delete-btn" data-id="${file.id}">Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    // Add event listeners
+                    this.filesGrid.querySelectorAll('.download-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const fileId = e.target.getAttribute('data-id');
+                            this.downloadFile(fileId);
+                        });
+                    });
+
+                    this.filesGrid.querySelectorAll('.delete-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const fileId = e.target.getAttribute('data-id');
+                            this.deleteFile(fileId);
+                        });
+                    });
+                } catch (error) {
+                    this.showToast('Failed to load files', 'error');
+                }
+            }
+
+            async downloadFile(fileId) {
+                try {
+                    const file = await this.drive.getFile(fileId);
                     const link = document.createElement('a');
                     link.href = file.content;
                     link.download = file.name;
@@ -1652,28 +1715,32 @@
                 }
             }
 
-            deleteFile(fileId) {
+            async deleteFile(fileId) {
                 if (!confirm('Are you sure you want to delete this file?')) return;
                 
                 try {
-                    this.drive.deleteFile(fileId);
-                    this.loadFiles();
+                    await this.drive.deleteFile(fileId);
+                    await this.loadFiles();
                     this.showToast('File deleted', 'success');
                 } catch (error) {
                     this.showToast('Delete failed', 'error');
                 }
             }
 
-            updateStats() {
-                const files = this.drive.getFiles();
-                const totalSize = this.drive.getTotalSize();
-                const usedMB = (totalSize / (1024 * 1024)).toFixed(1);
-                const percentage = Math.min((totalSize / this.drive.MAX_LOCAL_STORAGE) * 100, 100);
+            async updateStats(files = null) {
+                try {
+                    if (!files) files = await this.drive.getFiles();
+                    const totalSize = await this.drive.getTotalSize();
+                    const usedMB = (totalSize / (1024 * 1024)).toFixed(1);
+                    const percentage = Math.min((totalSize / this.drive.MAX_STORAGE) * 100, 100);
 
-                this.fileCount.textContent = files.length;
-                this.storageUsed.textContent = `${usedMB} MB`;
-                this.localStorage.textContent = `${usedMB} MB`;
-                this.storageProgress.style.width = `${percentage}%`;
+                    this.fileCount.textContent = files.length;
+                    this.storageUsed.textContent = `${usedMB} MB`;
+                    this.storageText.textContent = `${usedMB} MB of 500 MB used`;
+                    this.storageProgress.style.width = `${percentage}%`;
+                } catch (error) {
+                    console.error('Failed to update stats:', error);
+                }
             }
 
             formatFileSize(bytes) {
@@ -1696,7 +1763,7 @@
                 toast.querySelector('.toast-message').textContent = message;
                 
                 // Remove previous type classes
-                toast.classList.remove('success', 'error', 'info');
+                toast.classList.remove('success', 'error', 'info', 'warning');
                 toast.classList.add(type);
                 
                 toast.classList.add('visible');
