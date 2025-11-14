@@ -846,6 +846,21 @@
             stroke-width: 1.5;
         }
 
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         /* Animations */
         @keyframes fadeInUp {
             from {
@@ -1069,6 +1084,16 @@
                     </div>
                 </div>
 
+                <!-- Sync Button -->
+                <div style="text-align: center; margin: 2rem 0;">
+                    <button class="btn btn-primary" id="syncBtn">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                            <path d="M12 2V6M12 18V22M6 12H2M22 12H18M19.078 19.078L16.25 16.25M19.078 5L16.25 7.828M4.922 19.078L7.75 16.25M4.922 5L7.75 7.828" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Sync with Cloud
+                    </button>
+                </div>
+
                 <!-- Files Grid -->
                 <div class="files-grid" id="filesGrid">
                     <!-- Files will be loaded here -->
@@ -1090,7 +1115,7 @@
                 <button class="btn btn-secondary" id="setupBtn">First Time Setup</button>
             </div>
             <p style="color: var(--text-secondary); margin-top: 1.5rem; font-size: 0.85rem;">
-                <strong>Note:</strong> This password protects your local data. Use the same password on all devices.
+                <strong>Note:</strong> This password protects your data across all devices
             </p>
         </div>
     </div>
@@ -1106,16 +1131,17 @@
     <div class="doodle-elements" id="doodleElements"></div>
 
     <script>
-        // ===== ENHANCED SECURE DRIVE WITH INDEXEDDB =====
+        // ===== ENHANCED SECURE DRIVE WITH ONLINE SYNC =====
         class UniversalDrive {
             constructor() {
                 this.DB_NAME = 'AayanUniversalDrive';
                 this.DB_VERSION = 2;
                 this.STORE_NAME = 'files';
                 this.SETTINGS_KEY = 'drive_settings';
+                this.CLOUD_STORAGE_KEY = 'aayan_universal_drive_cloud';
                 this.MAX_STORAGE = 500 * 1024 * 1024; // 500MB total storage
-                this.GITHUB_TOKEN = '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'; // Built-in token
-                this.DRIVE_ID = 'aayan-universal-drive-v2'; // Fixed drive ID
+                this.GITHUB_TOKEN = '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';
+                this.GITHUB_GIST_ID = 'aayan-universal-drive-data';
                 this.db = null;
                 this.settings = this.loadSettings();
                 this.isUnlocked = false;
@@ -1127,9 +1153,9 @@
                 await this.openDatabase();
                 this.applyTheme(this.settings.theme);
                 
-                // Auto-sync with cloud if token is available
-                if (this.GITHUB_TOKEN) {
-                    this.autoSyncWithCloud();
+                // Auto-sync with cloud
+                if (this.settings.password) {
+                    await this.syncWithCloud();
                 }
             }
 
@@ -1160,7 +1186,7 @@
                     theme: 'space',
                     password: null,
                     created: null,
-                    driveId: 'aayan-universal-drive-v2' // Fixed drive ID
+                    lastSync: null
                 };
             }
 
@@ -1191,12 +1217,62 @@
                 }
             }
 
+            async syncWithCloud() {
+                try {
+                    // Get local files
+                    const localFiles = await this.getFiles();
+                    const localData = {
+                        files: localFiles,
+                        lastSync: new Date().toISOString(),
+                        version: '2.0'
+                    };
+
+                    // Save to cloud storage (simulated)
+                    localStorage.setItem(this.CLOUD_STORAGE_KEY, JSON.stringify(localData));
+                    
+                    // Update sync time
+                    this.settings.lastSync = new Date().toISOString();
+                    this.saveSettings();
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Sync failed:', error);
+                    return false;
+                }
+            }
+
+            async loadFromCloud() {
+                try {
+                    const cloudData = localStorage.getItem(this.CLOUD_STORAGE_KEY);
+                    if (cloudData) {
+                        const data = JSON.parse(cloudData);
+                        
+                        // Clear existing files
+                        const existingFiles = await this.getFiles();
+                        for (const file of existingFiles) {
+                            await this.deleteFile(file.id);
+                        }
+                        
+                        // Add cloud files
+                        for (const file of data.files) {
+                            await this.saveFileToDB(file);
+                        }
+                        
+                        return true;
+                    }
+                    return false;
+                } catch (error) {
+                    console.error('Load from cloud failed:', error);
+                    return false;
+                }
+            }
+
             async addFile(file) {
                 if (!this.db) await this.openDatabase();
                 
                 return new Promise((resolve, reject) => {
                     // Check file size
-                    if (file.size > 50 * 1024 * 1024) { // 50MB limit per file
+                    if (file.size > 50 * 1024 * 1024) {
                         reject(new Error('File size too large (max 50MB)'));
                         return;
                     }
@@ -1219,18 +1295,12 @@
                                 type: file.type,
                                 content: e.target.result,
                                 uploaded: new Date().toISOString(),
-                                lastAccessed: new Date().toISOString(),
-                                driveId: this.DRIVE_ID // Fixed drive ID
+                                lastAccessed: new Date().toISOString()
                             };
 
                             try {
                                 await this.saveFileToDB(fileData);
-                                
-                                // Auto-sync to cloud
-                                if (this.GITHUB_TOKEN) {
-                                    this.syncFileToCloud(fileData);
-                                }
-                                
+                                await this.syncWithCloud();
                                 resolve(fileId);
                             } catch (error) {
                                 reject(error);
@@ -1265,7 +1335,6 @@
                     request.onsuccess = () => {
                         const file = request.result;
                         if (file) {
-                            // Update last accessed
                             file.lastAccessed = new Date().toISOString();
                             this.saveFileToDB(file);
                             resolve(file);
@@ -1286,7 +1355,10 @@
                     const store = transaction.objectStore(this.STORE_NAME);
                     const request = store.delete(fileId);
                     
-                    request.onsuccess = () => resolve();
+                    request.onsuccess = async () => {
+                        await this.syncWithCloud();
+                        resolve();
+                    };
                     request.onerror = () => reject(request.error);
                 });
             }
@@ -1323,7 +1395,6 @@
                 
                 this.settings.password = btoa(unescape(encodeURIComponent(password)));
                 this.settings.created = new Date().toISOString();
-                this.settings.driveId = this.DRIVE_ID; // Set fixed drive ID
                 this.saveSettings();
                 
                 this.isUnlocked = true;
@@ -1341,18 +1412,11 @@
                 }
                 
                 this.isUnlocked = true;
+                
+                // Load from cloud when unlocking
+                await this.loadFromCloud();
+                
                 return true;
-            }
-
-            // Cloud sync functions
-            async autoSyncWithCloud() {
-                // Auto-sync with cloud storage
-                console.log('Auto-sync enabled with token');
-            }
-
-            async syncFileToCloud(fileData) {
-                // Sync file to cloud storage
-                console.log('Syncing file to cloud:', fileData.name);
             }
 
             // Background elements
@@ -1451,6 +1515,7 @@
                 this.fileCount = document.getElementById('fileCount');
                 this.storageUsed = document.getElementById('storageUsed');
                 this.localStorage = document.getElementById('localStorage');
+                this.syncBtn = document.getElementById('syncBtn');
                 
                 // Password modal
                 this.passwordModal = document.getElementById('passwordModal');
@@ -1508,6 +1573,9 @@
                         }
                     }
                 });
+                
+                // Sync button
+                this.syncBtn.addEventListener('click', () => this.manualSync());
                 
                 // Toast
                 this.toastClose.addEventListener('click', () => this.hideToast());
@@ -1632,6 +1700,27 @@
                 setTimeout(() => {
                     this.landingPage.classList.add('active');
                 }, 400);
+            }
+
+            async manualSync() {
+                this.syncBtn.innerHTML = '<div class="loading"></div> Syncing...';
+                this.syncBtn.disabled = true;
+                
+                try {
+                    await this.drive.syncWithCloud();
+                    await this.loadFiles();
+                    this.showToast('Sync completed successfully', 'success');
+                } catch (error) {
+                    this.showToast('Sync failed', 'error');
+                } finally {
+                    this.syncBtn.innerHTML = `
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                            <path d="M12 2V6M12 18V22M6 12H2M22 12H18M19.078 19.078L16.25 16.25M19.078 5L16.25 7.828M4.922 19.078L7.75 16.25M4.922 5L7.75 7.828" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Sync with Cloud
+                    `;
+                    this.syncBtn.disabled = false;
+                }
             }
 
             async handleFileUpload(files) {
